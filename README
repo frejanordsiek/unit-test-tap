@@ -1,0 +1,23 @@
+unit-test-tap
+Copyright (C) 2016 Freja Nordsiek
+License: LGPL 2.1 or later (see COPYING)
+
+A TAP output based unit testing framework that is in the spirit of
+SRFI-64 (http://srfi.schemers.org/srfi-64/srfi-64.html).
+
+The interface is similar and many procedures have the same names.
+However, skip and expected fail functionality are included into
+the tests themselves as keyword arguments instead of as separate
+procedures/macros. Additionally, the test-name argument has been
+moved to the end instead of being the first argument of each
+test macro, so as to better work with Guile's optional and
+keyword argument facilities. Another major difference is that
+test-begin's cannot be nested, though test-group-begin does
+add one level of nesting where all the tests within a group count
+as a single test for TAP output purposes (first one to FAIL or
+XPASS fails the whole group).
+
+This module is not portable outside of Guile at this time. It
+uses Guile specific exception handling code, uses
+Guile specific optional and keyword argument handling lambda*,
+and uses Guile specific module/library declaration.

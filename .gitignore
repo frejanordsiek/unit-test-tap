@@ -1,0 +1,26 @@
+
+# Autosaves
+*.ac~
+*.am~
+*.scm~
+*.m4~
+.gitattributes~
+.gitignore~
+
+# Testing output
+*.log
+*.trs
+
+# Packaging
+config.status
+config.log
+autom4te.cache
+aclocal.m4
+configure
+Makefile.in
+Makefile
+doc/.dirstamp
+doc/stamp-vti
+doc/version.texi
+
+

@@ -1,0 +1,52 @@
+\input texinfo
+@c -*-texinfo-*-
+@c %**start of header
+@include version.texi
+@setfilename unit-test-tap.info
+@documentencoding UTF-8
+@settitle unit-test-tap Reference Manual @value{VERSION}
+@syncodeindex pg cp
+@c %**end of header
+
+@copying
+Copyright @copyright{} 2016 Freja Nordsiek
+@end copying
+
+@titlepage
+@title unit-test-tap Reference Manual
+@subtitle for version @value{VERSION}, @value{UPDATED}
+@author Freja Nordsiek
+
+@c The following two commands start the copyright page.
+@page
+@vskip 0pt plus 1filll
+@insertcopying
+@end titlepage
+
+
+
+@contents
+
+@ifnottex
+@node TOP
+@top unit-test-tap Reference Manual
+
+This manual is for unit-test-tap (version @value{VERSION}, @value{UPDATED}).
+@end ifnottex
+
+@menu
+* Test::
+* Index::
+@end menu
+
+@node Test
+@chapter Test
+@pindex testing
+@cindex testing
+
+@node Index
+@unnumbered Index
+
+@printindex cp
+
+@bye
