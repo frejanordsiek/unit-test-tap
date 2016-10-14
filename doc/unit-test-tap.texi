@@ -9,8 +9,25 @@
 @c %**end of header
 
 @copying
-Copyright @copyright{} 2016 Freja Nordsiek
+This manual documents unit-test-tap version @value{VERSION}
+
+Copyright @copyright{} 2016 Freja Nordsiek.
+
+Permission is granted to copy, distribute and/or modify this document
+under the terms of the GNU Free Documentation License, Version 1.3 or
+any later version published by the Free Software Foundation; with no
+Invariant Sections, no Front-Cover Texts, and no Back-Cover Texts.  A
+copy of the license is included in the section entitled ``GNU Free
+Documentation License.''
 @end copying
+
+
+@dircategory The Algorithmic Language Scheme
+@direntry
+* unit-test-tap: (unit-test-tap).     Scheme unit-test-tap module/library manual.
+@end direntry
+
+
 
 @titlepage
 @title unit-test-tap Reference Manual
@@ -25,28 +42,309 @@ Copyright @copyright{} 2016 Freja Nordsiek
 
 
 
+
+@c Macros to make it easier to do enter procedures and macros.
+
+@c Anchor and index for one def
+@macro scmanchorindex {name}
+@c@findex \name\
+@anchor{\name\}
+@end macro
+
+
+
+
 @contents
 
 @ifnottex
 @node TOP
 @top unit-test-tap Reference Manual
 
-This manual is for unit-test-tap (version @value{VERSION}, @value{UPDATED}).
+@insertcopying
+@sp 1
 @end ifnottex
 
 @menu
-* Test::
+* Introduction::
+* Using The Library::
+* API::
+
+Appendices
+
+* GNU Free Documentation License:: The license of this manual.
+
+Indices
+
 * Index::
+* Index2::
+
 @end menu
 
-@node Test
-@chapter Test
-@pindex testing
-@cindex testing
+
+@node Introduction
+@chapter Introduction
+@cindex Introduction
+
+@menu
+* License::
+* Installation::
+* Portability::
+* SRFI-64::
+* TAP - Test Anything Protocol::
+@end menu
+
+unit-test-tap is a Scheme library for unit testing that writes test
+results using @acronym{TAP, Test Anything Protocol} done in the spirit
+of @uref{http://srfi.schemers.org/srfi-64/srfi-64.html, SRFI-64}.
+@uref{http://schemers.org, Scheme} is a dialect of lisp known for having
+a very large number of different implementations and a small language
+definition compared to other programming languages,
+though @acronym{R@sup{6}RS, Revised@sup{6} Reports on Scheme} does
+venture into the medium size territory.
+
+The library targets ones specific Guile implementation -
+@uref{https://www.gnu.org/software/guile/, Guile} starting with version
+2.0.
+@acronym{Guile, GNU’s Ubiquitous Intelligent Language for Extensions} is
+a popular Scheme implementation for extending programs and libraries
+(especially those from GNU), is the language that
+@uref{https://www.gnu.org/software/guix/,Guix} package manager uses
+which is in turn used for the
+@uref{https://www.gnu.org/software/guix/,GuixSD} GNU/Linux distribution,
+and is also seeing a growing number of standalone programs.
+
+
+@node License
+@section License
+
+unit-tap-test is copyrighted and licensed under the
+@acronym{LGPL 2.1+, Lesser General Public License version 2.1 or
+later}. The full license is reproduced in the file @file{COPYING}, and
+can also be read online at
+@url{https://www.gnu.org/licenses/old-licenses/lgpl-2.1}.
+
+This manual is copyrighted and licensed under the
+@acronym{GFDL 1.3+, GNU Free Documentation License 1.3 or later}
+(@pxref{GNU Free Documentation License})
+
+@node Installation
+@section Installation
+
+The library is entirely contained in @file{src/unit-tap-test.scm}. It is
+possible to just copy the file to where ever it is needed; such as into
+Guile's site directory, which can be found by running @code{(%site-dir)}
+at the REPL. On GNU/Linux, it will usually be something like
+@file{/usr/share/guile/site/X.Y} where @code{X.Y} is the effective
+version of Guile.
+
+However, a @file{configure} script is provided that will produce a
+@file{Makefile} that can be used to compile the library to Guile's
+bytecode format (go files), install the library into Guile's site
+directories for Scheme files and go files, build the documentation, and
+run unit tests on the library. The package is configured using the
+@file{configure} script, which takes user input to tune the build, finds
+Guile and where Guile wants Scheme and go files to be instealled, and
+checks that the required Scheme libraries/modules are available. Inside
+the package directory, run
+
+@example
+./configure [--prefix=DIR] [--enable-compile-scm=yes/no] [--with-guile=X.Y]
+@end example
+
+where optional parameters can be used to set the base directory (prefix)
+for installing the documentation, whether to compile to Guile's bytecode
+format (default is yes), and which Guile effective version to target and
+look for (default is 2.2, followed by 2.0 if 2.2 cannot be found).
+
+Now that the @file{Makefile} has been made, one runs
+
+@example
+make
+@end example
+
+to build the documentation in info format and compile the library to
+Guile's bytecode depending on whether that was enabled or
+not. The library can be checked by running unit tests on it by running
+
+@example
+make check
+@end example
+
+Everything can be installed by running
+
+@example
+make install
+@end example
+
+HTML documentation can be built using @code{make html} and installed by
+@code{make install-html}.
+
+If you grab unit-test-tap from its source code repository,
+@file{configure} and @file{Makefile} will not be present yet. You need
+@uref{https://www.gnu.org/software/autoconf/autoconf.html,Autoconf} and
+@uref{https://www.gnu.org/software/automake,Automake} in order to
+generate them. They are generated by running the command
+@code{autoreconf}.
+
+@node Portability
+@section Portability
+
+Scheme implementations are generally not very compatible with each
+other, each one providing many extensions on top of a couple different
+minimal Scheme language specifications which are not completely
+compatible with each other. Though, there are a few standardized
+extensions, known as the
+@acronym{SRFI, Scheme Requests for Implementation}.
+
+unit-tap-test mostly conforms to @uref{http://www.r6rs.org, R@sup{6}RS},
+but additionally uses
+@uref{http://srfi.schemers.org/srfi-6/srfi-6.html,SRFI-6} and a few
+Guile specific extensions. The Guile specific extensions that are used
+are Guile's @code{lambda*} way of providing optional and keyword
+arguments for procedures, Guile's exception handling mechanisms
+(@code{catch}), Guile's way of declaring libraries/modules, and
+procedure and macro Common Lisp style docstrings (a few Scheme
+implementations support such docstrings or variants of them).
+
+Due to these features, @strong{unit-test-tap will not work without
+modification on other Scheme implementations.}
+
+@node SRFI-64
+@section SRFI-64
+
+@uref{http://srfi.schemers.org/srfi-64/srfi-64.html, SRFI-64} is a
+Scheme extension for unit testing that is widely implemented by scheme
+implementations.
+
+@node TAP - Test Anything Protocol
+@section TAP - Test Anything Protocol
+
+@url{http://testanything.org/}
+
+@node Using The Library
+@chapter Using The Library
+@cindex Using The Library
+
+The test suite needs to be initialized before it is used with
+@ref{test-begin}. When testing is complete and all clean up code has
+been run, @ref{test-end} can be used to exit Guile with an exit status
+indicating the success (exit code 0) or failure (exit code 1) of the
+tests as a whole. The tests as whole are considered to have succeeded if
+all the test results were PASS, XFAIL, and/or SKIP. If there were any
+tests whose result was FAIL or XPASS, the tests as a whole are
+considered to have failed.
+
+@node API
+@chapter API
+@cindex API
+
+The library's exported procedures and macros are grouped by their
+functionality.
+
+@menu
+* Initialization and Finishing::
+* Test Suite Parameters::
+* Counters::
+* Groups::
+* Tests::
+@end menu
+
+@node Initialization and Finishing
+@section Initialization and Finishing
+
+
+
+@scmanchorindex{test-begin}
+@deffn {Scheme Procedure} test-begin [#:port p] [#:yaml-prefix prefix]
+Starts the unit testing framework/suite that is expected to have @var{n}
+tests in total. All counters are reset and the TAP header is written to
+output. The test writes its output to @code{(current-output-port)}, or
+@var{p} if it is given (it is expected to be an already opened output
+port). The YAML lines in the diagnostic messages for FAIL, XFAIL, and
+XPASS tests are prefixed with @var{prefix} if it is given. End testing
+with @ref{test-end}.
+@end deffn
+
+@scmanchorindex{test-end}
+@deffn {Scheme Procedure} test-end
+Exits Guile with an exit code set to whether the expected number of
+tests were run and their results were all PASS, XFAIL, and/or SKIP (exit
+code of 0) or not (exit code of 1).
+@end deffn
+
+@node Test Suite Parameters
+@section Test Suite Parameters
+
+@scmanchorindex{test-port}
+@deffn {Scheme Procedure} test-port
+Return the port that the test output is written to.
+@end deffn
+
+@scmanchorindex{test-yaml-prefix}
+@deffn {Scheme Procedure} test-yaml-prefix
+Return the string prefix for the yaml diagnostic block lines written
+after FAIL, XFAIL, and XPASS tests.
+@end deffn
+
+@scmanchorindex{test-group-name}
+@deffn {Scheme Procedure} test-group-name
+Return the name (string) of the currently entered group (@code{""} if
+none).
+@end deffn
+
+@scmanchorindex{test-group-failed}
+@deffn {Scheme Procedure} test-group-failed
+Return whether the currently entered group has failed (one FAIL or XPASS
+test inside it) as a boolean.
+@end deffn
+
+@scmanchorindex{test-number}
+@deffn {Scheme Procedure} test-number
+Return the total number (integer) of tests that are set to be done,  as
+set by the procedure @ref{test-begin}.
+@end deffn
+
+@node Counters
+@section Counters
+
+@scmanchorindex{test-count}
+@deffn {Scheme Procedure} test-count
+Return the 1 based index (integer) of the current test to be done.
+@end deffn
+
+@scmanchorindex{test-number-passed}
+@scmanchorindex{test-number-failed}
+@scmanchorindex{test-number-xfailed}
+@scmanchorindex{test-number-xpassed}
+@scmanchorindex{test-number-skipped}
+@deffn {Scheme Procedure} test-number-passed
+@deffnx {Scheme Procedure} test-number-failed
+@deffnx {Scheme Procedure} test-number-xfailed
+@deffnx {Scheme Procedure} test-number-xpassed
+@deffnx {Scheme Procedure} test-number-skipped
+Return the total number (integer) of tests that have passed, failed,
+xfailed, xpassed, or skipped so far respectively.
+@end deffn
+
+@node Groups
+@section Groups
+
+@node Tests
+@section Tests
+
+
+@node GNU Free Documentation License
+@appendix GNU Free Documentation License
+@cindex GNU FDL
+
+@include fdl-1.3.texi
 
 @node Index
 @unnumbered Index
-
 @printindex cp
+
+@node Index2
+@unnumbered Indexa
+@printindex fn
 
 @bye
