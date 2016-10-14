@@ -43,8 +43,8 @@
 
 (define-module (unit-test-tap)
   #:version (0 1)
+  #:duplicates (check)
   #:use-module ((rnrs io ports) #:version (6))
-  #:use-module ((srfi srfi-1))
   #:use-module ((srfi srfi-6))
   #:export (test-port test-yaml-prefix test-count test-number
                       test-number-passed test-number-failed

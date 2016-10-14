@@ -68,7 +68,6 @@ dnl Check all required modules.
 GUILE_MODULE_REQUIRED([rnrs lists])
 GUILE_MODULE_REQUIRED([rnrs io ports])
 
-GUILE_MODULE_REQUIRED([srfi srfi-1])
 GUILE_MODULE_REQUIRED([srfi srfi-6])
 
 

@@ -25,9 +25,8 @@
 ;;; string ports to be evaluated for correctness.
 
 (use-modules ((unit-test-tap))
-             ((srfi srfi-1))
              ((srfi srfi-6))
-             ((rnrs lists) #:version (6)))
+             ((rnrs lists) #:version (6) #:select (for-all)))
 
 
 ;;; Set a different random state each time
