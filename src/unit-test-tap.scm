@@ -83,13 +83,13 @@
 (define test-yaml-prefix
   (lambda ()
     "- Scheme Procedure: test-yaml-prefix
-     Return the string prefix for the yaml diagnostic block lines after
-     FAIL, XFAIL, and XPASS tests."
+     Return the string prefix for the yaml diagnostic block lines written
+     after FAIL, XFAIL, and XPASS tests."
     yaml-block-prefix))
 (define test-count
   (lambda ()
     "- Scheme Procedure: test-count
-     Return the number/index (integer) of the next test to be done."
+     Return the 1 based index (integer) of the current test to be done."
     count))
 (define test-number
   (lambda ()
@@ -484,8 +484,9 @@
   (lambda ()
     "- Scheme Procedure: test-end
      Exits the interpreter/environment with an exit code set to
-     whether the expected number of tests were run and they all
-     passed (exit code of 0) or not (exit code of 1)."
+     whether the expected number of tests were run and their results
+     were all PASS, XFAIL, and/or SKIP (exit code of 0) or not (exit
+     code of 1)."
     (exit (and (= 0 (+ (test-number-failed) (test-number-xpassed)))
                (= (+ 1 (test-number)) (test-count))))))
 
