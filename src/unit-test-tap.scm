@@ -177,21 +177,26 @@
 ;;; to the initial indentation, the key, and the value. Value is run
 ;;; through format. Each line will look like
 ;;; "    KEY: VALUE"
+;;;
+;;; Followed by
+;;;
+;;; "  ..."
 (define failure-message-block
   (lambda (lines)
     "- Scheme Procedure: failure-message-block lines
      Return the list of string lines for a failure block given the
      the specification for what should be on each line in LINES."
     (if (null? lines) '()
-        (cons "  ---"
-              (map (lambda (c)
-                     (let ((entry (cdr c)))
-                       (string-append
-                        (make-string (* 2 (+ 1 (car c))) #\space)
-                        (car entry) ": "
-                        (call-with-string-output-port
-                         (lambda (port) (display (cdr entry) port))))))
-                   lines)))))
+        (append '("  ---")
+                (map (lambda (c)
+                       (let ((entry (cdr c)))
+                         (string-append
+                          (make-string (* 2 (+ 1 (car c))) #\space)
+                          (car entry) ": "
+                          (call-with-string-output-port
+                           (lambda (port) (display (cdr entry) port))))))
+                     lines)
+                '("  ...")))))
 
 
 ;;; Format a list of args, exprs, etc. for use in a failure block with

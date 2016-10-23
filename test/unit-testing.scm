@@ -244,7 +244,8 @@
                                          prefix "  message: "
                                          "Arguments did not evaluate "
                                          eval-to
-                                         got-eval-lines))
+                                         got-eval-lines
+                                         prefix "  ..." newline-char))
                          ((string= state "XFAIL")
                           (string-append output "not ok "
                                          (number->string new-total)
@@ -253,7 +254,8 @@
                                          prefix "  message: "
                                          "Arguments did not evaluate "
                                          eval-to
-                                         got-eval-lines))
+                                         got-eval-lines
+                                         prefix "  ..." newline-char))
                          ((string= state "XPASS")
                           (string-append output "ok "
                                          (number->string new-total)
@@ -261,7 +263,8 @@
                                          prefix "  ---" newline-char
                                          prefix "  message: "
                                          "Expected to fail but didn't"
-                                         got-lines))
+                                         got-lines
+                                         prefix "  ..." newline-char))
                          (else
                           (string-append output "not ok "
                                          (number->string new-total)
@@ -277,7 +280,8 @@
                                          "(+ Wrong type argument in "
                                          "position ~A: ~S (1 a) (a))"
                                          newline-char
-                                         got-lines))))
+                                         got-lines
+                                         prefix "  ..." newline-char))))
                  ;; Compare output and return diagnostic information
                  ;; if it fails
                  (cond ((not (string= output (get-output-string p)))
@@ -465,7 +469,8 @@
                                            "    expr1: 2" newline-char
                                            "    expr2: 3" newline-char
                                            "    expr3: (+ 1 a)"
-                                           newline-char)
+                                           newline-char
+                                           "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
@@ -494,7 +499,8 @@
                                            "  evaluated: " newline-char
                                            "    arg0: 1" newline-char
                                            "    arg1: 2" newline-char
-                                           "    arg2: a" newline-char)
+                                           "    arg2: a" newline-char
+                                           "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
@@ -523,7 +529,8 @@
                                            "  error: #t" newline-char
                                            "  got: " newline-char
                                            "    expr0: (+ 1 2)"
-                                           newline-char)
+                                           newline-char
+                                           "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
@@ -541,7 +548,8 @@
                                            "  error: #t" newline-char
                                            "  got: " newline-char
                                            "    expr0: (+ 1 2)"
-                                           newline-char)
+                                           newline-char
+                                           "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
@@ -558,7 +566,8 @@
                                            newline-char
                                            "  got: " newline-char
                                            "    expr0: (+ 1 a)"
-                                           newline-char)
+                                           newline-char
+                                           "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
@@ -594,7 +603,8 @@
                                            "  error: ab" newline-char
                                            "  got: " newline-char
                                            "    expr0: (+ 1 2)"
-                                           newline-char)
+                                           newline-char
+                                           "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
@@ -616,7 +626,8 @@
                                            "  got: " newline-char
                                            "    expr0: "
                                            "(throw (quote ef) 1)"
-                                           newline-char)
+                                           newline-char
+                                           "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
@@ -713,7 +724,8 @@
                                                "  got: " newline-char
                                                "    expr0: #f" newline-char
                                                "  evaluated: " newline-char
-                                               "    arg0: #f" newline-char)
+                                               "    arg0: #f" newline-char
+                                               "  ..." newline-char)
                                 (call-with-output-string
                                   (lambda (p)
                                     (test-begin 1 #:port p)
@@ -745,7 +757,8 @@
                                                "fail but didn't"
                                                newline-char
                                                "  got: " newline-char
-                                               "    expr0: #t" newline-char)
+                                               "    expr0: #t" newline-char
+                                               "  ..." newline-char)
                                 (call-with-output-string
                                   (lambda (p)
                                     (test-begin 1 #:port p)
