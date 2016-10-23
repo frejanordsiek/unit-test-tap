@@ -18,9 +18,9 @@ as a single test for TAP output purposes (first one to FAIL or
 XPASS fails the whole group).
 
 This module is not portable outside of Guile at this time. It
-uses Guile specific exception handling code, uses
-Guile specific optional and keyword argument handling lambda*,
-and uses Guile specific module/library declaration.
+uses Guile specific optional and keyword argument handling lambda*,
+Common Lisp style docstrings, and uses Guile specific module/library
+declaration.
 
 
 INSTALL Instructions ===================================================

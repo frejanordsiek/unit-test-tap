@@ -202,9 +202,8 @@ but additionally uses
 @uref{http://srfi.schemers.org/srfi-6/srfi-6.html,SRFI-6} and a few
 Guile specific extensions. The Guile specific extensions that are used
 are Guile's @code{lambda*} way of providing optional and keyword
-arguments for procedures, Guile's exception handling mechanisms
-(@code{catch}), Guile's way of declaring libraries/modules, and
-procedure and macro Common Lisp style docstrings (a few Scheme
+arguments for procedures, Guile's way of declaring libraries/modules,
+and procedure and macro Common Lisp style docstrings (a few Scheme
 implementations support such docstrings or variants of them).
 
 Due to these features, @strong{unit-test-tap will not work without

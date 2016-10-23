@@ -36,15 +36,16 @@
 ;;; XPASS fails the whole group).
 ;;;
 ;;; This module is not portable outside of Guile at this time. It
-;;; uses Guile specific exception handling code, uses
-;;; Guile specific optional and keyword argument handling lambda*,
-;;; and uses Guile specific module/library declaration.
+;;; uses Guile specific optional and keyword argument handling lambda*,
+;;; Common Lisp style docstrings, and uses Guile specific module/library
+;;; declaration.
 
 
 (define-module (unit-test-tap)
   #:version (0 1)
   #:duplicates (check)
   #:use-module ((rnrs io ports) #:version (6))
+  #:use-module ((rnrs exceptions) #:version (6))
   #:use-module ((srfi srfi-6))
   #:export (test-port test-yaml-prefix test-count test-number
                       test-number-passed test-number-failed
@@ -250,21 +251,21 @@
              ;; Operate the test and put the output in msg if it isn't to
              ;; be skipped. If an error is caught, the test is a FAIL
              ;; and the error message must be generated.
-             (catch #t
-               (lambda ()
-                 (if (not xskip)
-                     (set! msg (proc . args))))
-               (lambda (key . error-args)
-                 (set! msg (failure-message-block
-                            (append
-                             (list (cons* 0 "message" "Error thrown")
-                                   (cons* 0 "error"
-                                          (call-with-string-output-port
-                                           (lambda (p) (display key p))))
-                                   (cons* 0 "got" ""))
-                             (format-listing
-                              1 "expr"
-                              (list-tail 'args args-skip-fail)))))))
+             (guard
+                 (key
+                  (#t
+                   (set! msg (failure-message-block
+                              (append
+                               (list (cons* 0 "message" "Error thrown")
+                                     (cons* 0 "error"
+                                            (call-with-string-output-port
+                                             (lambda (p) (display key p))))
+                                     (cons* 0 "got" ""))
+                               (format-listing
+                                1 "expr"
+                                (list-tail 'args args-skip-fail)))))))
+               (if (not xskip)
+                   (set! msg (proc . args))))
              (let ((passed (null? msg)))
                ;; If we were expected to fail but passed, then msg
                ;; needs to be set to a failure block of the arguments.
@@ -330,61 +331,57 @@
      are caught. Predicates that take any number of arguments,
      including zero, are supported."
     ((lowlevel-test-pred pred pred-name . exprs)
-     ;; The result will be put in msgs, which will be null if PASS. The
-     ;; values of each expression passed need to be obtained. If an
-     ;; error is thrown, error msgs indicating the error and what the
-     ;; unevaluated inputs were is generated.
-     (let* ((msgs '())
-            (values (catch #t (lambda () (list . exprs))
-                      (lambda (key . error-args)
-                        (set! msgs
-                          (failure-message-block
-                           (append
-                            (list (cons*
-                                   0 "message"
-                                   "Error thrown evaluating expressions")
-                                  (cons* 0 "error"
-                                         (call-with-string-output-port
-                                          (lambda (p) (display key p))))
-                                  (cons* 0 "got" ""))
-                            (format-listing 1 "expr" 'exprs))))))))
-       ;; If there was not already an error, then pred is applied to
-       ;; the values and msgs is set to null if the result is logical
-       ;; true (anything but #f) and the FAIL message otherwise
-       ;; (gives unevaluated and evaluated arguments). The evaluation
-       ;; is done with exception catching. An exception is considered
-       ;; FAIL.
-       (if (null? msgs)
-           (catch #t
-             (lambda ()
-               (set! msgs
-                 (if (apply pred values) '()
-                     (failure-message-block
-                      (append
-                       (list (cons* 0 "message"
-                                    (string-append
-                                     "Arguments did not evaluate "
-                                     pred-name))
-                             (cons* 0 "got" ""))
-                       (format-listing 1 "expr" 'exprs)
-                       (list (cons* 0 "evaluated" ""))
-                       (format-listing 1 "arg" values))))))
-             (lambda (key . error-args)
-               (set! msgs
-                 (failure-message-block
-                  (append
-                   (list (cons*
-                          0 "message"
-                          (string-append "Error thrown applying "
-                                         pred-name))
-                         (cons* 0 "error"
-                                (call-with-string-output-port
-                                 (lambda (p) (display key p))))
-                         (cons* 0 "got" ""))
-                   (format-listing 1 "expr" 'exprs)
-                   (list (cons* 0 "evaluated" ""))
-                   (format-listing 1 "arg" values)))))))
-       msgs))))
+     ;; The result messages will be returned by the continuation, which
+     ;; will be null if PASS. The values of each expression passed need
+     ;; to be obtained. If an error is thrown, error msgs indicating the
+     ;; error and what the unevaluated inputs were is generated.
+     (call-with-current-continuation
+      (lambda (return)
+        (let ((values (guard
+                          (key
+                           (#t (return
+                                (failure-message-block
+                                 (append
+                                  (list
+                                   (cons*
+                                    0 "message"
+                                    "Error thrown evaluating expressions")
+                                   (cons* 0 "error"
+                                          (call-with-string-output-port
+                                           (lambda (p) (display key p))))
+                                   (cons* 0 "got" ""))
+                                  (format-listing 1 "expr" 'exprs))))))
+                        (list . exprs))))
+          ;; Pred is applied to the values and null returned if the
+          ;; result is logical true (anything but #f) and the FAIL
+          ;; message otherwise (gives unevaluated and evaluated
+          ;; arguments). The evaluation is done with exception catching.
+          ;; An exception is considered FAIL.
+          (guard
+              (key (#t (failure-message-block
+                        (append
+                         (list (cons*
+                                0 "message"
+                                (string-append "Error thrown applying "
+                                               pred-name))
+                               (cons* 0 "error"
+                                      (call-with-string-output-port
+                                       (lambda (p) (display key p))))
+                               (cons* 0 "got" ""))
+                         (format-listing 1 "expr" 'exprs)
+                         (list (cons* 0 "evaluated" ""))
+                         (format-listing 1 "arg" values)))))
+            (if (apply pred values) '()
+                (failure-message-block
+                 (append
+                  (list (cons* 0 "message"
+                               (string-append
+                                "Arguments did not evaluate "
+                                pred-name))
+                        (cons* 0 "got" ""))
+                  (format-listing 1 "expr" 'exprs)
+                  (list (cons* 0 "evaluated" ""))
+                  (format-listing 1 "arg" values)))))))))))
 
 
 ;;; Raw test macro checking whether an expression throws a particular
@@ -399,39 +396,34 @@
      is caught, the test is considered a failure. The resulting
      message lines are returned (null means PASS)."
     ((lowlevel-test-error error-type expr)
-     ;; The result will be put in msgs, which will be null if PASS.
+     ;; The result messages will be return, which will be null if PASS.
      ;; error-type and expr are converted to string to help make
      ;; failure blocks.
-     (let ((msg '())
-           (s-expr (call-with-string-output-port
+     (let ((s-expr (call-with-string-output-port
                     (lambda (p) (display 'expr p))))
            (s-error-type (call-with-string-output-port
                           (lambda (p) (display error-type p)))))
        ;; Catch all errors and check to see if one is thrown and that it
        ;; matches error-type. If it does, the test is a PASS. Otherwise
        ;; it is a FAIL.
-       (catch #t
-         (lambda ()
-           expr
-           (set! msg
-             (failure-message-block
-              (list (cons* 0 "message" "Exception was not thrown")
-                    (cons* 0 "error" s-error-type)
-                    (cons* 0 "got" "")
-                    (cons* 1 "expr0" s-expr)))))
-         (lambda (key . error-args)
-           (if (not (or (eq? error-type #t) (equal? error-type key)))
-               (set! msg
-                 (failure-message-block
-                  (list (cons* 0 "message" "Wrong exception was thrown")
-                        (cons* 0 "error" "")
-                        (cons* 1 "got" (call-with-string-output-port
-                                        (lambda (p)
-                                          (display key p))))
-                        (cons* 1 "expected" s-error-type)
-                        (cons* 0 "got" "")
-                        (cons* 1 "expr0" s-expr)))))))
-       msg))))
+       (guard
+           (key
+            ((or (eq? error-type #t) (equal? error-type key)) '())
+            (else (failure-message-block
+                   (list (cons* 0 "message" "Wrong exception was thrown")
+                         (cons* 0 "error" "")
+                         (cons* 1 "got" (call-with-string-output-port
+                                         (lambda (p)
+                                           (display key p))))
+                         (cons* 1 "expected" s-error-type)
+                         (cons* 0 "got" "")
+                         (cons* 1 "expr0" s-expr)))))
+         expr
+         (failure-message-block
+          (list (cons* 0 "message" "Exception was not thrown")
+                (cons* 0 "error" s-error-type)
+                (cons* 0 "got" "")
+                (cons* 1 "expr0" s-expr))))))))
 
 
 ;;; Begin testing for n tests, by setting all the variables to initial
@@ -523,12 +515,12 @@
      exception occured or not in beginning the group or running EXPR."
     ((test-group-with-cleanup name expr cleanup-form)
      (begin
-       (if (string-null? *group-name*)
-           (begin
-             (test-group-begin name)
-             (catch #t (lambda () expr)
-               (lambda (key . error-args) '()))))
-       (catch #t (lambda () cleanup-form) (lambda (key . error-args) '()))
+       (dynamic-wind
+         (lambda ()
+           (if (string-null? *group-name*)
+                (guard (key (#t #t)) (test-group-begin name))))
+         (lambda () (guard (key (#t #t)) expr))
+         (lambda () (guard (key (#t #t)) cleanup-form)))
        (if (not (string-null? *group-name*))
            (test-group-end))))))
 

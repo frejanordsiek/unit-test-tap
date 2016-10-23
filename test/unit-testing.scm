@@ -26,7 +26,8 @@
 
 (use-modules ((unit-test-tap))
              ((srfi srfi-6))
-             ((rnrs lists) #:version (6) #:select (for-all)))
+             ((rnrs lists) #:version (6) #:select (for-all))
+             ((rnrs exceptions) #:version (6) #:select (raise)))
 
 
 ;;; Set a different random state each time
@@ -168,10 +169,10 @@
                ;; what the output should be, check the output, and check
                ;; the counts for each kind of test.
                (let* ((x (if (string= state "EVAL EXCEPTION")
-                             '(throw 'aive)
+                             '(raise 'aive)
                              (car items0)))
                       (y (if (string= state "EVAL EXCEPTION")
-                             '(throw 'aive)
+                             '(raise 'aive)
                              (car items1)))
                       (new-total (+ total count))
                       ;; Calculate the expected counts
@@ -457,7 +458,7 @@
                                            "    expr0: 1" newline-char
                                            "    expr1: 2" newline-char
                                            "    expr2: 3" newline-char
-                                           "    expr3: (throw (quote blah))"
+                                           "    expr3: (raise (quote blah))"
                                            newline-char
                                            "  ..." newline-char)
                             (call-with-output-string
@@ -465,7 +466,7 @@
                                 (test-begin 1 #:port p)
                                 (test-pred ((lambda ( . args)
                                               (apply * args))
-                                            1 2 3 (throw 'blah))))))))
+                                            1 2 3 (raise 'blah))))))))
 
 ;;; Predicate exception
 (display (response (get-count) "test-pred PRED EXCEPTION"
@@ -473,7 +474,7 @@
                                            "not ok 1" newline-char
                                            "  ---" newline-char
                                            "  message: Error thrown "
-                                           "applying throw"
+                                           "applying raise"
                                            newline-char
                                            "  error: en" newline-char
                                            "  got: " newline-char
@@ -485,7 +486,7 @@
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
-                                (test-pred (throw 'en)))))))
+                                (test-pred (raise 'en)))))))
 
 
 ;;; Check test-error
@@ -571,7 +572,7 @@
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
-                                (test-error 'ab (throw 'ab "e")))))))
+                                (test-error 'ab (raise 'ab)))))))
 
 ;;; Fail to catch anything while trying to catch a specific error (FAIL)
 (display (response (get-count) "test-error specific error none thrown FAIL"
@@ -604,13 +605,13 @@
                                            "    expected: ab" newline-char
                                            "  got: " newline-char
                                            "    expr0: "
-                                           "(throw (quote ef) 1)"
+                                           "(raise (quote ef))"
                                            newline-char
                                            "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
-                                (test-error 'ab (throw 'ef 1)))))))
+                                (test-error 'ab (raise 'ef)))))))
 
 
 ;;; Test group features.
@@ -810,7 +811,7 @@
                            (begin
                              (test-assert #t)
                              (test-assert #f)
-                             (throw 'ae)
+                             (raise 'ae)
                              (set! finished #t))
                            (set! cleaned-up #t))))
                      (and (not finished) cleaned-up
