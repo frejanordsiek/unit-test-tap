@@ -258,14 +258,9 @@
                  (set! msg (failure-message-block
                             (append
                              (list (cons* 0 "message" "Error thrown")
-                                   (cons* 0 "error" "")
-                                   (cons* 1 "key"
+                                   (cons* 0 "error"
                                           (call-with-string-output-port
                                            (lambda (p) (display key p))))
-                                   (cons* 1 "args"
-                                          (call-with-string-output-port
-                                           (lambda (p)
-                                             (display error-args p))))
                                    (cons* 0 "got" ""))
                              (format-listing
                               1 "expr"
@@ -348,14 +343,9 @@
                             (list (cons*
                                    0 "message"
                                    "Error thrown evaluating expressions")
-                                  (cons* 0 "error" "")
-                                  (cons* 1 "key"
+                                  (cons* 0 "error"
                                          (call-with-string-output-port
                                           (lambda (p) (display key p))))
-                                  (cons* 1 "args"
-                                         (call-with-string-output-port
-                                          (lambda (p)
-                                            (display error-args p))))
                                   (cons* 0 "got" ""))
                             (format-listing 1 "expr" 'exprs))))))))
        ;; If there was not already an error, then pred is applied to
@@ -387,14 +377,9 @@
                           0 "message"
                           (string-append "Error thrown applying "
                                          pred-name))
-                         (cons* 0 "error" "")
-                         (cons* 1 "key"
+                         (cons* 0 "error"
                                 (call-with-string-output-port
                                  (lambda (p) (display key p))))
-                         (cons* 1 "args"
-                                (call-with-string-output-port
-                                 (lambda (p)
-                                   (display error-args p))))
                          (cons* 0 "got" ""))
                    (format-listing 1 "expr" 'exprs)
                    (list (cons* 0 "evaluated" ""))
@@ -440,12 +425,9 @@
                  (failure-message-block
                   (list (cons* 0 "message" "Wrong exception was thrown")
                         (cons* 0 "error" "")
-                        (cons* 1 "got" "")
-                        (cons* 2 "key" (call-with-string-output-port
-                                        (lambda (p) (display key p))))
-                        (cons* 2 "args" (call-with-string-output-port
-                                         (lambda (p)
-                                           (display error-args p))))
+                        (cons* 1 "got" (call-with-string-output-port
+                                        (lambda (p)
+                                          (display key p))))
                         (cons* 1 "expected" s-error-type)
                         (cons* 0 "got" "")
                         (cons* 1 "expr0" s-expr)))))))

@@ -168,10 +168,10 @@
                ;; what the output should be, check the output, and check
                ;; the counts for each kind of test.
                (let* ((x (if (string= state "EVAL EXCEPTION")
-                             '(+ 1 "a")
+                             '(throw 'aive)
                              (car items0)))
                       (y (if (string= state "EVAL EXCEPTION")
-                             '(+ 1 "a")
+                             '(throw 'aive)
                              (car items1)))
                       (new-total (+ total count))
                       ;; Calculate the expected counts
@@ -273,13 +273,7 @@
                                          prefix "  message: "
                                          "Error thrown evaluating "
                                          "expressions" newline-char
-                                         prefix "  error: " newline-char
-                                         prefix "    key: wrong-type-arg"
-                                         newline-char
-                                         prefix "    args: "
-                                         "(+ Wrong type argument in "
-                                         "position ~A: ~S (1 a) (a))"
-                                         newline-char
+                                         prefix "  error: a" newline-char
                                          got-lines
                                          prefix "  ..." newline-char))))
                  ;; Compare output and return diagnostic information
@@ -458,17 +452,12 @@
                                            "  message: Error thrown "
                                            "evaluating expressions"
                                            newline-char
-                                           "  error: " newline-char
-                                           "    key: wrong-type-arg"
-                                           newline-char
-                                           "    args: "
-                                           "(+ Wrong type: ~S (a) (a))"
-                                           newline-char
+                                           "  error: blah" newline-char
                                            "  got: " newline-char
                                            "    expr0: 1" newline-char
                                            "    expr1: 2" newline-char
                                            "    expr2: 3" newline-char
-                                           "    expr3: (+ 1 a)"
+                                           "    expr3: (throw (quote blah))"
                                            newline-char
                                            "  ..." newline-char)
                             (call-with-output-string
@@ -476,7 +465,7 @@
                                 (test-begin 1 #:port p)
                                 (test-pred ((lambda ( . args)
                                               (apply * args))
-                                            1 2 3 (+ 1 "a"))))))))
+                                            1 2 3 (throw 'blah))))))))
 
 ;;; Predicate exception
 (display (response (get-count) "test-pred PRED EXCEPTION"
@@ -484,27 +473,19 @@
                                            "not ok 1" newline-char
                                            "  ---" newline-char
                                            "  message: Error thrown "
-                                           "applying +"
+                                           "applying throw"
                                            newline-char
-                                           "  error: " newline-char
-                                           "    key: wrong-type-arg"
-                                           newline-char
-                                           "    args: "
-                                           "(+ Wrong type: ~S (a) (a))"
-                                           newline-char
+                                           "  error: en" newline-char
                                            "  got: " newline-char
-                                           "    expr0: 1" newline-char
-                                           "    expr1: 2" newline-char
-                                           "    expr2: a" newline-char
+                                           "    expr0: (quote en)"
+                                           newline-char
                                            "  evaluated: " newline-char
-                                           "    arg0: 1" newline-char
-                                           "    arg1: 2" newline-char
-                                           "    arg2: a" newline-char
+                                           "    arg0: en" newline-char
                                            "  ..." newline-char)
                             (call-with-output-string
                               (lambda (p)
                                 (test-begin 1 #:port p)
-                                (test-pred (+ 1 2 "a")))))))
+                                (test-pred (throw 'en)))))))
 
 
 ;;; Check test-error
@@ -619,9 +600,7 @@
                                            "Wrong exception was thrown"
                                            newline-char
                                            "  error: " newline-char
-                                           "    got: " newline-char
-                                           "      key: ef" newline-char
-                                           "      args: (1)" newline-char
+                                           "    got: ef" newline-char
                                            "    expected: ab" newline-char
                                            "  got: " newline-char
                                            "    expr0: "
