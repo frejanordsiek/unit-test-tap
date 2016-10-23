@@ -1,0 +1,9 @@
+Change logs are not stored in 'ChangeLog' files. Instead, the changes
+are described in the log's of the packages version control system, which
+can be obtained by looking at the package's Git repository
+
+	https://github.com/frejanordsiek/unit-test-tap.git
+
+and
+
+	https://github.com/frejanordsiek/unit-test-tap

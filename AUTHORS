@@ -1,0 +1,6 @@
+
+
+Freja Norsiek:
+wrote the whole package except for the build scripts in config/ which are
+from Autotools and Makeinfo and most of m4/guile.m4 which is from Guile
+(wrote a small patch in it).
