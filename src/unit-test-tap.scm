@@ -559,7 +559,7 @@
      Asserts that the evaluation of (PRED . ARGS) is non #f. The
      test takes an optional NAME. Indicate whether the test should
      be skipped or is expected to fail with the keyword arguments
-     #:skip and #:xfail set to non #f (the default). Predicates that
+     #:skip and #:xfail set to non #f (the default is #f). Predicates that
      take any number of arguments, including zero, are supported. An
      example test to see if the result of two mathematical expressions
      are equal but that one expects it to fail would be
@@ -581,7 +581,7 @@
      considered a failure. The test takes an optional NAME. Indicate
      whether the test should be skipped or is expected to fail with
      the keyword arguments #:skip and #:xfail set to non #f (the
-     default)."
+     default is #f)."
     ((test-error error-type expr . extra-args)
      (wrap-test (lowlevel-test-error error-type expr)
                 1 . extra-args))))
@@ -596,7 +596,7 @@
      Asserts that EXPR evaluates to non #f. The test takes an optional
      NAME. Indicate whether the test should be skipped or is expected
      to fail with the keyword arguments #:skip and #:xfail set to
-     non #f (the default)."
+     non #f (the default is #f)."
     ((test-assert expr . extra-args)
      (wrap-test (lowlevel-test-pred (lambda (x) x) "#t" expr)
                 2 . extra-args))))
@@ -610,7 +610,7 @@
      Asserts (eq? EXPR0 EXPR1). The test takes an optional NAME.
      Indicate whether the test should be skipped or is expected
      to fail with the keyword arguments #:skip and #:xfail set to
-     non #f (the default)."
+     non #f (the default #f)."
     ((test-eq expr0 expr1 . extra-args)
      (test-pred (eq? expr0 expr1) . extra-args))))
 
@@ -623,7 +623,7 @@
      Asserts (eqv? EXPR0 EXPR1). The test takes an optional NAME.
      Indicate whether the test should be skipped or is expected
      to fail with the keyword arguments #:skip and #:xfail set to
-     non #f (the default)."
+     non #f (the default is #f)."
     ((test-eqv expr0 expr1 . extra-args)
      (test-pred (eqv? expr0 expr1) . extra-args))))
 
@@ -636,7 +636,7 @@
      Asserts (equal? EXPR0 EXPR1). The test takes an optional NAME.
      Indicate whether the test should be skipped or is expected
      to fail with the keyword arguments #:skip and #:xfail set to
-     non #f (the default)."
+     non #f (the default #f)."
     ((test-equal expr0 expr1 . extra-args)
      (test-pred (equal? expr0 expr1) . extra-args))))
 
@@ -651,7 +651,7 @@
      EXPR0 and EXPR1 is less than or equal to TOLERANCE. The test takes
      an optional NAME. Indicate whether the test should be skipped or is
      expected to fail with the keyword arguments #:skip and #:xfail set
-     to non #f (the default)."
+     to non #f (the default #f)."
     ((test-approximate expr0 expr1 tolerance . extra-args)
      (wrap-test (lowlevel-test-pred
                  (lambda (x y) (<= (abs (- x y)) tolerance))
