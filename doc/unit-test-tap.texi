@@ -76,7 +76,7 @@ Appendices
 Indices
 
 * Index::
-* Index2::
+* API Index::
 
 @end menu
 
@@ -85,17 +85,10 @@ Indices
 @chapter Introduction
 @cindex Introduction
 
-@menu
-* License::
-* Installation::
-* Portability::
-* SRFI-64::
-* TAP - Test Anything Protocol::
-@end menu
-
 unit-test-tap is a Scheme library for unit testing that writes test
-results using @acronym{TAP, Test Anything Protocol} done in the spirit
-of @uref{http://srfi.schemers.org/srfi-64/srfi-64.html, SRFI-64}.
+results using @acronym{TAP, Test Anything Protocol} version 13 done in
+the spirit of
+@uref{http://srfi.schemers.org/srfi-64/srfi-64.html, SRFI-64}.
 @uref{http://schemers.org, Scheme} is a dialect of lisp known for having
 a very large number of different implementations and a small language
 definition compared to other programming languages,
@@ -113,6 +106,14 @@ which is in turn used for the
 @uref{https://www.gnu.org/software/guix/,GuixSD} GNU/Linux distribution,
 and is also seeing a growing number of standalone programs.
 
+@menu
+* License::
+* Installation::
+* Portability::
+* Test Result Definitions::
+* SRFI-64::
+* TAP - Test Anything Protocol::
+@end menu
 
 @node License
 @section License
@@ -125,7 +126,7 @@ can also be read online at
 
 This manual is copyrighted and licensed under the
 @acronym{GFDL 1.3+, GNU Free Documentation License 1.3 or later}
-(@pxref{GNU Free Documentation License})
+(@pxref{GNU Free Documentation License}).
 
 @node Installation
 @section Installation
@@ -143,7 +144,7 @@ bytecode format (go files), install the library into Guile's site
 directories for Scheme files and go files, build the documentation, and
 run unit tests on the library. The package is configured using the
 @file{configure} script, which takes user input to tune the build, finds
-Guile and where Guile wants Scheme and go files to be instealled, and
+Guile and where Guile wants Scheme and go files to be installed, and
 checks that the required Scheme libraries/modules are available. Inside
 the package directory, run
 
@@ -209,30 +210,352 @@ implementations support such docstrings or variants of them).
 Due to these features, @strong{unit-test-tap will not work without
 modification on other Scheme implementations.}
 
+@node Test Result Definitions
+@section Test Result Definitions
+
+There are five different results a particular test/assertion can
+have. They are defined below.
+
+@itemize @bullet
+@item @dfn{Pass (PASS)} --- The test/expressions evaluated correctly as
+it should.
+@item @dfn{Fail (FAIL)} --- The test/expressions did not evaluate
+correctly when they should have.
+@item @dfn{Expected Fail (XFAIL)} --- The test/expressions did not evaluate
+correctly but this was expected before hand (e.g. it is on the TODO list
+to fix this).
+@item @dfn{Unexpected Pass (XPASS)} --- The test/expressions evaluated
+correctly but it/they were expected to fail.
+@item @dfn{Skipped (SKIP)} --- The test was skipped.
+@end itemize
+
 @node SRFI-64
 @section SRFI-64
 
 @uref{http://srfi.schemers.org/srfi-64/srfi-64.html, SRFI-64} is a
-Scheme extension for unit testing that is widely implemented by scheme
-implementations.
+Scheme extension for unit testing that is widely implemented by Scheme
+implementations. It uses an imperative style to performing tests, where
+named test suites/groups are entered and left and assertions done
+explicitly, each as separate procedure and macro calls. The simplest
+assert in SRFI-64 is
+
+@lisp
+(test-assert [TEST-NAME] EXPRESSION)
+@end lisp
+
+where @var{TEST-NAME} is the name of the particular test/assertion being
+done (optional) and @var{EXPRESSION} is the expression or value to
+evaluate and check to see if it is logically true (anything other than
+@code{#f}).
+
+There are additional asserts for different kinds of equality
+(@code{test-eq}, @code{test-eqv}, and @code{test-equal}), approximate
+numericaly equality (@code{test-approximate}), and whether an
+expressiont throws an exception (@code{test-error}).
+
+SRFI-64 also provides procedures to skip the next @var{N} tests and to
+mark the next test as being expected to fail.
+
+SRFI-64 is pretty comprehensive and even provides the ability to make
+one's own runners which can customize the output. However, SRFI-64 with
+a custom runner is a bit suboptimal for writing test results in TAP
+format. Additionally, marking tests to skip or being expected to fail
+would be more conveniently implemented using keyword arguments in the
+test asserts themselves, though implementing keyword arguments in a
+cross-Scheme-implementation portable fashion is difficult (this was
+probably the reason SRFI-64 does it the way it does). These were the
+motivations for writing the unit-test-tap module/library.
+
 
 @node TAP - Test Anything Protocol
 @section TAP - Test Anything Protocol
 
-@url{http://testanything.org/}
+The TAP protocol, specified at @url{http://testanything.org}, is a
+protocol for the output of unit tests that was originally designed for
+Perl but has been taken up by projects in other languages. There is also
+built in support for using TAP for unit test output in
+@uref{https://www.gnu.org/software/automake,Automake}.
+
+unit-test-tap uses
+@uref{http://testanything.org/tap-version-13-specification.html,version 13}
+of TAP.
+
+The protocol consists of a header before the first test that declares
+the TAP format version and how many tests @var{N} to expect to be
+reported.
+
+@example
+TAP version 13
+1..N
+@end example
+
+And then, at least one line of output is written for each test. The
+first, and possibly only, line for the @var{n}'th test declares the test
+result.
+
+@example
+ok n DESCRIPTION # DIRECTIVE
+@end example
+
+if the test produced the correct results (PASS, XPASS, or SKIP) or
+
+@example
+not ok n DESCRIPTION # DIRECTIVE
+@end example
+
+if the test did not produce the correct results (FAIL or XFAIL).
+
+@var{DESCRIPTION} is an arbitrary string without newlines describing or
+naming what test was done. @code{# DIRECTIVE} is only included if the
+test result was XFAIL, XPASS, or SKIP. @var{DIRECTIVE} is
+@code{SKIP} for the SKIP result and @code{TODO} for XFAIL and XPASS. An
+arbitrary string without newlines can optionally follow the directive.
+
+Then, optionally after the line declaring the result of the test, one or
+more diagnostic lines can be written that describe the result, the
+inputs, etc. Typically, some sort of failure message is given along with
+how the test failed (or was expected to) for FAIL, XFAIL, and XPASS
+results. The diagnostic block is an inline YAML document that starts
+with the line @code{  ---} and terminates with the line @code{  ...},
+with each diagnostic line in the YAML block itsefl having a minimum
+indentation of two space characters.
+
+An example output for a FAIL test (test number 3) from checking that
+@code{(+ a 2)} is zero when @var{a} is 8 would be
+
+@example
+not ok 3 - result is zero
+  ---
+  message: Numbers not =
+  got:
+    expr0: 0
+    expr1: (+ a 2)
+  evaluated:
+    arg0: 0
+    arg1: 10
+  ...
+@end example
+
 
 @node Using The Library
 @chapter Using The Library
 @cindex Using The Library
 
-The test suite needs to be initialized before it is used with
-@ref{test-begin}. When testing is complete and all clean up code has
-been run, @ref{test-end} can be used to exit Guile with an exit status
+An overview of how to use the unit-test-tap library/module is given
+here. A full listing of all the procedures and macros that are in the
+unit-test-tap library will be given later (@pxref{API}). If you are
+familiar with SRFI-64, then the API of unit-test-tap will feel very
+familiar with many procedures/macros having the same name and similar
+arguments.
+
+@menu
+* Starting Up::
+* Doing Tests::
+* Using Groups::
+* Finishing Up::
+@end menu
+
+@node Starting Up
+@section Starting Up
+
+unit-tap-test is imported for use by
+
+@lisp
+(import ((unit-test-tap)))
+@end lisp
+
+The test suite needs to be initialized before it is used. This is done
+with @code{test-begin}, which needs to be given the total number of tests
+that are expected to be done @var{N} and optionally the port to write
+test output to (default is standard output) and the prefix to use for
+the diagnostic YAML blocks (default is nothing).
+
+@lisp
+(test-begin N [#:port PORT] [#:yaml-prefix PREFIX])
+@end lisp
+
+where the square brackets denote optional parts (the brackets should be
+left out if the particular keyword argument is used). The YAML prefix is
+provided for the case when the test harness expects TAP output older
+than version 13, in which case @var{PREFIX} should start with the
+@code{"#"} character.
+
+@node Doing Tests
+@section Doing Tests
+
+The simplest test just checks that a single argument, @var{EXPR},
+evaluates to non @code{#f} (logically true), which is
+
+@lisp
+(test-assert EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL])
+@end lisp
+
+where the test name, whether to skip the test (default is not to skip),
+and whether the test is expected to fail (default is that it is not
+expected to fail) are optional arguments. All tests in the unit-test-tap
+library/module support these three optional arguments. One difference
+from SRFI-64 is that the optional @var{NAME} argument goes after
+@var{EXPR} instead of before it. The rearrangement was required to
+support the keyword arguments while having a consistent interface to all
+tests in the library/module (one of the test takes a variable number of
+arguments).
+
+All tests will catch exceptions thrown when evaluating their arguments,
+which in the case of @code{test-assert} is in evaluating @var{EXPR}.
+
+An example of a PASS test would be
+
+@lisp
+(test-assert #t "always passes")
+@end lisp
+
+and one that fails
+
+@lisp
+(test-assert #f "always fails")
+@end lisp
+
+or
+
+@lisp
+(test-assert (= 3 "4") "always fails due to an exception")
+@end lisp
+
+and a test to be skipped
+
+@lisp
+(test-assert (+ 3 2) "always skipped" #:skip #t)
+@end lisp
+
+and an XFAIL test
+
+@lisp
+(test-assert #f "expected fails" #:xfail #t)
+@end lisp
+
+and an XPASS test
+
+@lisp
+(test-assert #t "expected fail but passes anyways" #:xfail #t)
+@end lisp
+
+Two objects or expressions @var{EXPR0} and @var{EXPR1} can be compared
+for various definitions of equality (@code{eq?}, @code{eqv?}, and
+@code{equal?}) by
+
+@lisp
+(test-eq EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-eqv EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-equal EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL])
+@end lisp
+
+Two numbers, or expressions that evaluate to numbers, @var{EXPR0} and
+@var{EXPR1} can be compared to see if they are equal to within a given
+numerical accuracy @var{TOLERANCE}
+
+@lisp
+(test-approximate EXPR0 EXPR1 TOLERANCE [NAME] [#:skip SKIP] [#:xfail XFAIL])
+@end lisp
+
+All five of the previously described test macros have counterparts with
+the same name in SRFI-64. They are all actually implemented through
+another more general test macro, that does not appear in SRFI-64, which
+is @code{test-pred} and is used as follows
+
+@lisp
+(test-pred (PRED . ARGS) [NAME] [#:skip SKIP] [#:xfail XFAIL])
+@end lisp
+
+where the test evaluates the expression
+
+@lisp
+(PRED . ARGS)
+@end lisp
+
+and checks whether the result is non @code{#f}. @var{PRED} is a
+procedure that takes the arguments @var{ARGS}. This test supports
+@var{PRED}s that take any number of arguments, including none
+(thunks). Note that the wrapping of @var{PRED} and @var{ARGS} in a list
+within the call is required (@code{test-pred} is a macro, not a
+procedure, and expects this syntax).
+
+As an example, @code{test-eq} described previously could be implemented
+as
+
+@lisp
+(test-pred (eq? EXPR0 EXPR1) [NAME] [#:skip SKIP] [#:xfail XFAIL])
+@end lisp
+
+The last test, which also has an SRFI-64 counterpart, is
+@code{test-error} which checks whether an expression @var{EXPR} raises
+an error, specifically of type @var{ERROR-TYPE}, and is used as follows
+
+@lisp
+(test-error ERROR-TYPE EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL])
+@end lisp
+
+If the wrong type of error/exception is thrown (doesn't match
+@var{ERROR-TYPE}), the test counts as FAIL (or XFAIL if expected to
+fail). An @var{ERROR-TYPE} of @code{#t} means that any type of
+error/exception counts as the right kind.
+
+@node Using Groups
+@section Using Groups
+
+This library supports grouping testins under a named test groups that
+count as a single test (all tests within them PASS, FAIL, etc. together)
+as far as output is concerned. Nested groups are not supported at this
+time.
+
+A named group, @var{NAME}, is started as
+
+@lisp
+(test-group-begin NAME)
+@end lisp
+
+and then ended/exited as
+
+@lisp
+(test-group-end)
+@end lisp
+
+Tests in the group result in no output till the first result of FAIL or
+XPASS, which then is output and all further tests in the group are
+skipped. If all tests in the group were PASS, XFAIL, and/or SKIP when
+the group is ended/exited, the group is considered to be PASS and a PASS
+output result is written.
+
+It is also possible to begin a group that has some number of tests and
+an expression @var{CLEANUP-FORM} that should be run to clean up
+resources at the end, even if an exception occurred. The test group is
+automatically ended. This is done with the macro
+
+@lisp
+(test-group-with-cleanup NAME EXPR CLEANUP-FORM)
+@end lisp
+
+where @var{EXPR} could be a single expression (say, a single test) or
+could be a @code{begin} block with more than one expression. This macro
+is the exact counterpart to the SRFI-64 one with the same name.
+
+@node Finishing Up
+@section Finishing Up
+
+When testing is complete and all clean up code has
+been run, @code{test-end} can be used to exit Guile with an exit status
 indicating the success (exit code 0) or failure (exit code 1) of the
 tests as a whole. The tests as whole are considered to have succeeded if
-all the test results were PASS, XFAIL, and/or SKIP. If there were any
-tests whose result was FAIL or XPASS, the tests as a whole are
-considered to have failed.
+all the test results were PASS, XFAIL, and/or SKIP and the number of
+tests performed is equal to the number given to @code{test-begin}. If
+there were any tests whose result was FAIL or XPASS, the tests as a
+whole are considered to have failed. Finishing up this way is optional,
+but it is useful for some test harnesses (e.g. Automake's) to have an
+exit status that reflects the status of the testing as a whole.
+
+@lisp
+(test-end)
+@end lisp
+
 
 @node API
 @chapter API
@@ -252,16 +575,14 @@ functionality.
 @node Initialization and Finishing
 @section Initialization and Finishing
 
-
-
 @scmanchorindex{test-begin}
-@deffn {Scheme Procedure} test-begin [#:port p] [#:yaml-prefix prefix]
-Starts the unit testing framework/suite that is expected to have @var{n}
+@deffn {Scheme Procedure} test-begin N [#:port P] [#:yaml-prefix PREFIX]
+Starts the unit testing framework/suite that is expected to have @var{N}
 tests in total. All counters are reset and the TAP header is written to
 output. The test writes its output to @code{(current-output-port)}, or
-@var{p} if it is given (it is expected to be an already opened output
+@var{PORT} if it is given (it is expected to be an already opened output
 port). The YAML lines in the diagnostic messages for FAIL, XFAIL, and
-XPASS tests are prefixed with @var{prefix} if it is given. End testing
+XPASS tests are prefixed with @var{PREFIX} if it is given. End testing
 with @ref{test-end}.
 @end deffn
 
@@ -274,6 +595,9 @@ code of 0) or not (exit code of 1).
 
 @node Test Suite Parameters
 @section Test Suite Parameters
+
+The test suite parameters can be read, after testing has started, by the
+following procedures.
 
 @scmanchorindex{test-port}
 @deffn {Scheme Procedure} test-port
@@ -307,6 +631,9 @@ set by the procedure @ref{test-begin}.
 @node Counters
 @section Counters
 
+The number of tests done and their results are all kept track of in
+counters, which can be read by the following procedures.
+
 @scmanchorindex{test-count}
 @deffn {Scheme Procedure} test-count
 Return the 1 based index (integer) of the current test to be done.
@@ -329,8 +656,85 @@ xfailed, xpassed, or skipped so far respectively.
 @node Groups
 @section Groups
 
+@scmanchorindex{test-group-begin}
+@deffn {Scheme Procedure} test-group-begin NAME
+Begins a test group with the given @var{NAME}. An error is thrown if
+@var{NAME} is not a string or group has already been begun. All tests
+within a group pass or fail together as if they were a single test. End
+the group with @ref{test-group-end}.
+@end deffn
+
+@scmanchorindex{test-group-end}
+@deffn {Scheme Procedure} test-group-end
+Ends the current test group. If all tests in it passed, the group is
+considered to be a PASS.
+@end deffn
+
+@scmanchorindex{test-group-with-cleanup}
+@deffn {Scheme Procedure} test-group-with-cleanup NAME EXPR CLEANUP-FORM
+Enters the group @var{NAME}, runs expression @var{EXPR}, and then ends
+the group and executes @var{CLEANUP-FORM} regardless of whether an
+exception occured or not in beginning the group or running @var{EXPR}.
+@end deffn
+
 @node Tests
 @section Tests
+
+@scmanchorindex{test-pred}
+@deffn {Scheme Procedure} test-pred (PRED . ARGS) [NAME] [#:skip SKIP] [#:xfail XFAIL]
+Asserts that the evaluation of @code{(PRED . ARGS)} is non
+@code{#f}. The test takes an optional @var{NAME}. Indicate whether the
+test should be skipped or is expected to fail with the keyword arguments
+@code{#:skip} and @code{#:xfail} set to non @code{#f} (the default is
+@code{#f}). Predicates that take any number of arguments, including
+zero, are supported. An example test to see if the result of two
+mathematical expressions are equal but that one expects it to fail would
+be
+
+@lisp
+(test-pred (= (* 2 3) (* 2 4)) "example" #:xfail #t)
+@end lisp
+@end deffn
+
+@scmanchorindex{test-assert}
+@deffn {Scheme Macro} test-assert EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL]
+Asserts that @var{EXPR} evaluates to non @code{#f}. The test takes an
+optional @var{NAME}. Indicate whether the test should be skipped or
+is expected to fail with the keyword arguments @code{#:skip} and
+@code{#:xfail} set to non @code{#f} (the default is @code{#f}).
+@end deffn
+
+@scmanchorindex{test-eq}
+@deffn {Scheme Macro} test-eq EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL]
+@deffnx {Scheme Macro} test-eqv EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL]
+@deffnx {Scheme Macro} test-equal EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL]
+Asserts @code{(pred EXPR0 EXPR1)} for @code{pred} being @code{eq?},
+@code{eqv?}, and @code{equal?} respectively. The test takes an optional
+@var{NAME}. Indicate whether the test should be skipped or is expected
+to fail with the keyword arguments @code{#:skip} and @code{#:xfail} set
+to non @code{#f} (the default is @code{#f}).
+@end deffn
+
+@scmanchorindex{test-approximate}
+@deffn {Scheme Macro} test-approximate EXPR0 EXPR1 TOLERANCE [NAME] [#:skip SKIP] [#:xfail XFAIL]
+Asserts that the absolute value of the numerical difference between
+@var{EXPR0} and @var{EXPR1} is less than or equal to
+@var{TOLERANCE}. The test takes an optional @var{NAME}. Indicate whether
+the test should be skipped or is expected to fail with the keyword
+arguments @code{#:skip} and @code{#:xfail} set to non @code{#f} (the
+default is @code{#f}).
+@end deffn
+
+@scmanchorindex{test-error}
+@deffn {Scheme Macro} test-error ERROR-TYPE EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL]
+Asserts that evaluating @var{EXPR} throws an exception of type
+@var{ERROR-TYPE} (set to @code{#t} to indicate any exception
+type). Throwing no exception or an exception of a different type is
+considered a failure. The test takes an optional @var{NAME}. Indicate
+whether the test should be skipped or is expected to fail with the
+keyword arguments @code{#:skip} and @code{#:xfail} set to non @code{#f}
+(the default is @code{#f}).
+@end deffn
 
 
 @node GNU Free Documentation License
@@ -343,8 +747,8 @@ xfailed, xpassed, or skipped so far respectively.
 @unnumbered Index
 @printindex cp
 
-@node Index2
-@unnumbered Indexa
+@node API Index
+@unnumbered API Index
 @printindex fn
 
 @bye
