@@ -17,6 +17,11 @@
 # Boston, MA  02110-1301  USA
 
 
+# AWK file to remove docstrings and guile module declaration and its
+# associated command
+STRIP_GUILE_AWK_FILE = build-aux/strip_guile_specific.awk
+STRIP_GUILE = $(AWK) -f $(top_srcdir)/$(STRIP_GUILE_AWK_FILE)
+
 # Install directories for scm and go files.
 
 scmdir = $(GUILE_SITE_SCM)
@@ -39,9 +44,13 @@ GUILD_FLAGS = -Wunsupported-warning -Wunbound-variable -Warity-mismatch \
 
 # Sources and targets
 
+BUILT_SOURCES = \
+	src/r7rs/unit-test-tap.scm \
+	src/r6rs/unit-test-tap.scm
+
 SOURCES = src/unit-test-tap.scm
 
-GOBJECTS = $(SOURCES:%.scm=%.go)
+GOBJECTS = src/unit-test-tap.go
 
 
 # Tests
@@ -51,7 +60,7 @@ TESTSOURCES = $(TESTS:%.test=%.scm)
 
 TEST_LOG_DRIVER = \
 	env AM_TAP_AWK='$(AWK)' \
-	$(SHELL) $(top_srcdir)/config/tap-driver.sh --ignore-exit --comments
+	$(SHELL) $(top_srcdir)/build-aux/tap-driver.sh --ignore-exit --comments
 
 
 # Files to build and/or install
@@ -70,13 +79,25 @@ info_TEXINFOS = doc/unit-test-tap.texi
 
 # Packaging and cleaning
 
-EXTRA_DIST = $(SOURCES) $(TESTSOURCES)
+EXTRA_DIST = $(SOURCES) $(TESTSOURCES) \
+	$(STRIP_GUILE_AWK_FILE)
 
-CLEANFILES = $(GOBJECTS) $(srcdir)/doc/unit-test-tap.info $(TESTS)
+CLEANFILES = $(GOBJECTS) $(BUILT_SOURCES) \
+	$(srcdir)/doc/unit-test-tap.info $(TESTS) \
 MAINTAINERCLEANFILES = Makefile.in
 
 
 # Build templates
+
+src/r7rs/unit-test-tap.scm: src/unit-test-tap.scm src/r7rs/header.scm.in
+	cp $(top_srcdir)/src/r7rs/header.scm.in $@
+	$(STRIP_GUILE) $< | $(SED) -e 's/^/    /g' >> $@
+	echo '    )' >> $@
+
+src/r6rs/unit-test-tap.scm: src/unit-test-tap.scm src/r6rs/header.scm.in
+	cp $(top_srcdir)/src/r6rs/header.scm.in $@
+	$(STRIP_GUILE) $< | $(SED) -e 's/^/  /g' >> $@
+	echo '  )' >> $@
 
 SUFFIXES = .scm .go .test
 
