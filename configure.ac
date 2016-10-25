@@ -54,6 +54,8 @@ AC_MSG_RESULT([$compile_scm])
 
 
 AC_PROG_INSTALL
+AC_PROG_AWK
+AC_PROG_SED
 
 
 GUILE_PKG([$with_guile 2.2 2.0])
