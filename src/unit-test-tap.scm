@@ -46,7 +46,6 @@
   #:duplicates (check)
   #:use-module ((rnrs io ports) #:version (6))
   #:use-module ((rnrs exceptions) #:version (6))
-  #:use-module ((srfi srfi-6))
   #:export (test-port test-yaml-prefix test-count test-number
                       test-number-passed test-number-failed
                       test-number-xfailed test-number-xpassed
