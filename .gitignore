@@ -4,6 +4,8 @@
 *.am~
 *.scm~
 *.m4~
+*.awk~
+*.scm.in~
 .gitattributes~
 .gitignore~
 
@@ -23,4 +25,9 @@ doc/.dirstamp
 doc/stamp-vti
 doc/version.texi
 
+# Built files
+*.go
+*.info
+src/r6rs/unit-test-tap.scm
+src/r7rs/unit-test-tap.scm
 

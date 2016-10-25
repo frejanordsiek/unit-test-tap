@@ -1,11 +1,13 @@
 # Set default behaviour, in case users don't have core.autocrlf set.
-* text=auto
+* text=lf
 
 # Explicitly declare text files we want to always be normalized and converted 
 # to native line endings on checkout.
 *.scm eol=lf
+*.scm.in eol=lf
 *.am eol=lf
 *.ac eol=lf
 *.m4 eol=lf
 *.texi eol=lf
 *.sh eol=lf
+*.awk eol=lf
