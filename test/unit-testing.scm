@@ -24,10 +24,32 @@
 ;;; generated manually while unit-test-tap's output is put into
 ;;; string ports to be evaluated for correctness.
 
-(use-modules ((unit-test-tap))
-             ((srfi srfi-6))
-             ((rnrs lists) #:version (6) #:select (for-all))
-             ((rnrs exceptions) #:version (6) #:select (raise)))
+(import (unit-test-tap))
+
+(cond-expand ((or r6rs guile-2)
+              (import (rnrs base (6)))
+              (import (only (rnrs lists (6)) for-all))
+              (import (only (rnrs exceptions (6)) raise))
+              (import (only (rnrs io ports (6))
+                            call-with-string-output-port
+                            open-string-output-port)))
+             (r7rs
+              (import (scheme base))
+              (import (scheme write))
+              ;; Make the R6RS call-with-string-output-port and
+              ;; open-string-output-port in terms of R7RS
+              ;; open-output-string and get-output-string.
+              (define open-string-output-port
+                (lambda ()
+                  (let ((p (open-output-string)))
+                    (values p (lambda () (get-output-string p))))))
+              (define call-with-string-output-port
+                (lambda (proc)
+                  (let ((p (open-output-string)))
+                    (proc p)
+                    (let ((out-s (get-output-string p)))
+                      (close-port p)
+                      out-s))))))
 
 
 ;;; Set a different random state each time
@@ -38,7 +60,7 @@
 (define-syntax my-format
   (syntax-rules ()
     ((my-format fmt obj)
-     (call-with-output-string
+     (call-with-string-output-port
        (lambda (p) (if (string= fmt "~a")
                        (display obj p)
                        (write obj p)))))))
@@ -51,7 +73,7 @@
 
 
 ;;; Get the newline character
-(define newline-char (call-with-output-string newline))
+(define newline-char (call-with-string-output-port newline))
 
 ;;; Get a header maker
 (define TAP-header
@@ -105,7 +127,7 @@
 (display (response (get-count) "header"
                    (for-all (lambda (n)
                               (string= (TAP-header n)
-                                       (call-with-output-string
+                                       (call-with-string-output-port
                                          (lambda (p)
                                            (test-begin n #:port p)))))
                             (map (lambda (x) (random-int 1 100))
@@ -118,19 +140,20 @@
                    (let ((number 10))
                      (for-all
                       (lambda (n prefix)
-                        (let ((p (open-output-string))
-                              (pass #f))
-                          (test-begin n #:port p #:yaml-prefix prefix)
-                          (set! pass
-                            (and (eq? p (test-port))
-                                 (string= prefix (test-yaml-prefix))
-                                 (= n (test-number))
-                                 (check-test-counts 0 0 0 0 0)
-                                 (string-null? (test-group-name))
-                                 (not (test-group-failed))
-                                 (string= (TAP-header n)
-                                          (get-output-string p))))
-                          (close-port p)
+                        (let ((pass #f))
+                          (let-values (((p get-output)
+                                        (open-string-output-port)))
+                            (test-begin n #:port p #:yaml-prefix prefix)
+                            (set! pass
+                              (and (string= (TAP-header n)
+                                            (get-output))
+                                   (eq? p (test-port))
+                                   (string= prefix (test-yaml-prefix))
+                                   (= n (test-number))
+                                   (check-test-counts 0 0 0 0 0)
+                                   (string-null? (test-group-name))
+                                   (not (test-group-failed))))
+                            (close-port p))
                           pass))
                       (map (lambda (x) (random-int 1 100)) (iota number))
                       (map (lambda (x) (number->string x)) (iota number))))))
@@ -147,173 +170,173 @@
      (let* ((number (length (list . exprs0)))
             (output (TAP-header number))
             (counts '(0 0 0 0 0))
-            (p (open-output-string))
             (msg '())
             (total (apply + counts))
             (index (cdr (assoc state '(("PASS" . 0) ("FAIL" . 1)
                                        ("XFAIL" . 2) ("XPASS" . 3)
                                        ("SKIP" . 4)
                                        ("EVAL EXCEPTION" . 1))))))
-       (test-begin number #:port p #:yaml-prefix prefix)
-       ;; The test is the iteration over all the expressions till there
-       ;; is a failure
-       (display
-        (response
-         (get-count) (string-append "test-" which " " state)
-         ;; Loop over the expressions incrementing the count each time.
-         ;; Reaching null means all tests passed.
-         (let loop ((count 1) (items0 (list . exprs0))
-                    (items1 (list . exprs1)))
-           (if (null? items1) #t
-               ;; Grab the first items and do the assertion. Then generate
-               ;; what the output should be, check the output, and check
-               ;; the counts for each kind of test.
-               (let* ((x (if (string= state "EVAL EXCEPTION")
-                             '(raise 'aive)
-                             (car items0)))
-                      (y (if (string= state "EVAL EXCEPTION")
-                             '(raise 'aive)
-                             (car items1)))
-                      (new-total (+ total count))
-                      ;; Calculate the expected counts
-                      (new-counts (map (lambda (y n) (if (= n index)
-                                                         (+ y count)
-                                                         y))
-                                       counts (iota 5)))
-                      ;; Generate the got/evaluated diagnostic lines for
-                      ;; failure messages.
-                      (got-lines
-                       (string-append newline-char
-                                      prefix "  got: " newline-char
-                                      prefix "    expr0: x"
-                                      newline-char
-                                      (if (string= which "assert")
-                                          ""
-                                          (string-append
-                                           prefix "    expr1: y"
-                                           newline-char))))
-                      (got-eval-lines
-                       (string-append got-lines
-                                      prefix "  evaluated: "
-                                      newline-char
-                                      prefix "    arg0: "
-                                      (my-format "~a" x)
-                                      newline-char
-                                      (if (string= which "assert")
-                                          ""
-                                          (string-append
-                                           prefix "    arg1: "
-                                           (my-format "~a" y)
-                                           newline-char))))
-                      ;; Generate what failure messages will say was
-                      ;; not evaluated (#t, which, or approx message).
-                      (eval-to (cond ((string= which "assert") "#t")
-                                     ((string= which "approximate")
-                                      (string-append
-                                       "approximately equal (within "
-                                       (number->string tol)
-                                       " of each other)"))
-                                     (else which)))
-                      (skip (string= state "SKIP"))
-                      (xfail (or (string= state "XFAIL")
-                                 (string= state "XPASS"))))
-                 (cond ((string= which "assert")
-                        (test-assert x name #:skip skip #:xfail xfail))
-                       ((string= which "eq?")
-                        (test-eq x y name #:skip skip #:xfail xfail))
-                       ((string= which "eqv?")
-                        (test-eqv x y name #:skip skip #:xfail xfail))
-                       ((string= which "equal?")
-                        (test-equal x y name #:skip skip #:xfail xfail))
-                       (else (test-approximate x y tol name
-                                               #:skip skip #:xfail xfail)))
-                 ;; Append the output for the respective state.
-                 (set! output
-                   (cond ((string= state "PASS")
-                          (string-append output "ok "
-                                         (number->string new-total)
-                                         " - " name newline-char))
-                         ((string= state "SKIP")
-                          (string-append output "ok "
-                                         (number->string new-total)
-                                         " - " name " # SKIP" newline-char))
-                         ((string= state "FAIL")
-                          (string-append output "not ok "
-                                         (number->string new-total)
-                                         " - " name newline-char
-                                         prefix "  ---" newline-char
-                                         prefix "  message: "
-                                         "Arguments did not evaluate "
-                                         eval-to
-                                         got-eval-lines
-                                         prefix "  ..." newline-char))
-                         ((string= state "XFAIL")
-                          (string-append output "not ok "
-                                         (number->string new-total)
-                                         " - " name " # TODO" newline-char
-                                         prefix "  ---" newline-char
-                                         prefix "  message: "
-                                         "Arguments did not evaluate "
-                                         eval-to
-                                         got-eval-lines
-                                         prefix "  ..." newline-char))
-                         ((string= state "XPASS")
-                          (string-append output "ok "
-                                         (number->string new-total)
-                                         " - " name " # TODO" newline-char
-                                         prefix "  ---" newline-char
-                                         prefix "  message: "
-                                         "Expected to fail but didn't"
-                                         got-lines
-                                         prefix "  ..." newline-char))
-                         (else
-                          (string-append output "not ok "
-                                         (number->string new-total)
-                                         " - " name newline-char
-                                         prefix "  ---" newline-char
-                                         prefix "  message: "
-                                         "Error thrown evaluating "
-                                         "expressions" newline-char
-                                         prefix "  error: a" newline-char
-                                         got-lines
-                                         prefix "  ..." newline-char))))
-                 ;; Compare output and return diagnostic information
-                 ;; if it fails
-                 (cond ((not (string= output (get-output-string p)))
-                        (begin
-                          (set! msg (list
-                                     (string-append "  FAILED "
-                                                    (number->string count))
-                                     "reason: output not correct"
-                                     (string-append "  arg0: "
-                                                    (my-format "~a" x))
-                                     (my-format "~s" output)
-                                     (my-format "~s"
-                                             (get-output-string p))))
-                          #f))
-                       ;; Check the counts and return diagnostic
-                       ;; information if it fails
-                       ((not (apply check-test-counts new-counts))
-                        (begin
-                          (set! msg (list
-                                     (string-append "  FAILED "
-                                                    (number->string count))
-                                     "reason: counts not right"
-                                     (string-append "  arg0: "
-                                                    (my-format "~a" x))
-                                     (string-append
-                                      "  counts: "
-                                      (my-format "~a" (get-test-counts)))
-                                     (string-append
-                                      "  expected-counts: "
-                                      (my-format "~a" new-counts))))
-                          #f))
-                       (else (loop (+ 1 count) (cdr items0)
-                                   (cdr items1)))))))))
-       ;; print all messages.
-       (for-each (lambda (x) (display (string-append x newline-char)))
-                 msg)
-       (close-port p)))))
+       (let-values (((p get-output) (open-string-output-port)))
+         (test-begin number #:port p #:yaml-prefix prefix)
+         ;; The test is the iteration over all the expressions till there
+         ;; is a failure
+         (display
+          (response
+           (get-count) (string-append "test-" which " " state)
+           ;; Loop over the expressions incrementing the count each time.
+           ;; Reaching null means all tests passed.
+           (let loop ((count 1) (items0 (list . exprs0))
+                      (items1 (list . exprs1)))
+             (if (null? items1) #t
+                 ;; Grab the first items and do the assertion. Then generate
+                 ;; what the output should be, check the output, and check
+                 ;; the counts for each kind of test.
+                 (let* ((x (if (string= state "EVAL EXCEPTION")
+                               '(raise 'aive)
+                               (car items0)))
+                        (y (if (string= state "EVAL EXCEPTION")
+                               '(raise 'aive)
+                               (car items1)))
+                        (new-total (+ total count))
+                        ;; Calculate the expected counts
+                        (new-counts (map (lambda (y n) (if (= n index)
+                                                           (+ y count)
+                                                           y))
+                                         counts (iota 5)))
+                        ;; Generate the got/evaluated diagnostic lines for
+                        ;; failure messages.
+                        (got-lines
+                         (string-append newline-char
+                                        prefix "  got: " newline-char
+                                        prefix "    expr0: x"
+                                        newline-char
+                                        (if (string= which "assert")
+                                            ""
+                                            (string-append
+                                             prefix "    expr1: y"
+                                             newline-char))))
+                        (got-eval-lines
+                         (string-append got-lines
+                                        prefix "  evaluated: "
+                                        newline-char
+                                        prefix "    arg0: "
+                                        (my-format "~a" x)
+                                        newline-char
+                                        (if (string= which "assert")
+                                            ""
+                                            (string-append
+                                             prefix "    arg1: "
+                                             (my-format "~a" y)
+                                             newline-char))))
+                        ;; Generate what failure messages will say was
+                        ;; not evaluated (#t, which, or approx message).
+                        (eval-to (cond ((string= which "assert") "#t")
+                                       ((string= which "approximate")
+                                        (string-append
+                                         "approximately equal (within "
+                                         (number->string tol)
+                                         " of each other)"))
+                                       (else which)))
+                        (skip (string= state "SKIP"))
+                        (xfail (or (string= state "XFAIL")
+                                   (string= state "XPASS"))))
+                   (cond ((string= which "assert")
+                          (test-assert x name #:skip skip #:xfail xfail))
+                         ((string= which "eq?")
+                          (test-eq x y name #:skip skip #:xfail xfail))
+                         ((string= which "eqv?")
+                          (test-eqv x y name #:skip skip #:xfail xfail))
+                         ((string= which "equal?")
+                          (test-equal x y name #:skip skip #:xfail xfail))
+                         (else (test-approximate x y tol name
+                                                 #:skip skip #:xfail xfail)))
+                   ;; Append the output for the respective state.
+                   (set! output
+                     (cond ((string= state "PASS")
+                            (string-append output "ok "
+                                           (number->string new-total)
+                                           " - " name newline-char))
+                           ((string= state "SKIP")
+                            (string-append output "ok "
+                                           (number->string new-total)
+                                           " - " name " # SKIP" newline-char))
+                           ((string= state "FAIL")
+                            (string-append output "not ok "
+                                           (number->string new-total)
+                                           " - " name newline-char
+                                           prefix "  ---" newline-char
+                                           prefix "  message: "
+                                           "Arguments did not evaluate "
+                                           eval-to
+                                           got-eval-lines
+                                           prefix "  ..." newline-char))
+                           ((string= state "XFAIL")
+                            (string-append output "not ok "
+                                           (number->string new-total)
+                                           " - " name " # TODO" newline-char
+                                           prefix "  ---" newline-char
+                                           prefix "  message: "
+                                           "Arguments did not evaluate "
+                                           eval-to
+                                           got-eval-lines
+                                           prefix "  ..." newline-char))
+                           ((string= state "XPASS")
+                            (string-append output "ok "
+                                           (number->string new-total)
+                                           " - " name " # TODO" newline-char
+                                           prefix "  ---" newline-char
+                                           prefix "  message: "
+                                           "Expected to fail but didn't"
+                                           got-lines
+                                           prefix "  ..." newline-char))
+                           (else
+                            (string-append output "not ok "
+                                           (number->string new-total)
+                                           " - " name newline-char
+                                           prefix "  ---" newline-char
+                                           prefix "  message: "
+                                           "Error thrown evaluating "
+                                           "expressions" newline-char
+                                           prefix "  error: a" newline-char
+                                           got-lines
+                                           prefix "  ..." newline-char))))
+                   ;; Compare output and return diagnostic information
+                   ;; if it fails
+                   (cond ((not (string= output (get-output)))
+                          (begin
+                            (set! msg (list
+                                       (string-append "  FAILED "
+                                                      (number->string count))
+                                       "reason: output not correct"
+                                       (string-append "  arg0: "
+                                                      (my-format "~a" x))
+                                       (my-format "~s" output)
+                                       (my-format "~s"
+                                                  (get-output))))
+                            #f))
+                         ;; Check the counts and return diagnostic
+                         ;; information if it fails
+                         ((not (apply check-test-counts new-counts))
+                          (begin
+                            (set! msg (list
+                                       (string-append "  FAILED "
+                                                      (number->string count))
+                                       "reason: counts not right"
+                                       (string-append "  arg0: "
+                                                      (my-format "~a" x))
+                                       (string-append
+                                        "  counts: "
+                                        (my-format "~a" (get-test-counts)))
+                                       (string-append
+                                        "  expected-counts: "
+                                        (my-format "~a" new-counts))))
+                            #f))
+                         (else (loop (+ 1 count) (cdr items0)
+                                     (cdr items1)))))))))
+         ;; print all messages.
+         (for-each (lambda (x) (display (string-append x newline-char)))
+                   msg)
+         (close-port p))))))
 
 ;;; Macro to check all test-assert states. It takes expression lists
 ;;; that should pass as well as those that should fail. For assert, the
@@ -418,7 +441,7 @@
 (display (response (get-count) "test-pred 0 args"
                    (string= (string-append (TAP-header 1)
                                            "ok 1" newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-pred ((lambda () #t))))))))
@@ -427,7 +450,7 @@
 (display (response (get-count) "test-pred 3 args"
                    (string= (string-append (TAP-header 1)
                                            "ok 1" newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-pred ((lambda ( . args)
@@ -438,7 +461,7 @@
 (display (response (get-count) "test-pred 6 args"
                    (string= (string-append (TAP-header 1)
                                            "ok 1" newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-pred ((lambda ( . args)
@@ -461,7 +484,7 @@
                                            "    expr3: (raise (quote blah))"
                                            newline-char
                                            "  ..." newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-pred ((lambda ( . args)
@@ -483,7 +506,7 @@
                                            "  evaluated: " newline-char
                                            "    arg0: en" newline-char
                                            "  ..." newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-pred (raise 'en)))))))
@@ -495,7 +518,7 @@
 (display (response (get-count) "test-error catch all PASS"
                    (string= (string-append (TAP-header 1)
                                            "ok 1" newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error #t (+ 1 "a")))))))
@@ -513,7 +536,7 @@
                                            "    expr0: (+ 1 2)"
                                            newline-char
                                            "  ..." newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error #t (+ 1 2)))))))
@@ -532,7 +555,7 @@
                                            "    expr0: (+ 1 2)"
                                            newline-char
                                            "  ..." newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error #t (+ 1 2) #:xfail #t))))))
@@ -550,7 +573,7 @@
                                            "    expr0: (+ 1 a)"
                                            newline-char
                                            "  ..." newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error #t (+ 1 "a") #:xfail #t))))))
@@ -559,7 +582,7 @@
 (display (response (get-count) "test-error catch all SKIP"
                    (string= (string-append (TAP-header 1)
                                            "ok 1 # SKIP" newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error #t (+ 1 2) #:skip #t))))))
@@ -569,7 +592,7 @@
 (display (response (get-count) "test-error specific error PASS"
                    (string= (string-append (TAP-header 1)
                                            "ok 1" newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error 'ab (raise 'ab)))))))
@@ -587,7 +610,7 @@
                                            "    expr0: (+ 1 2)"
                                            newline-char
                                            "  ..." newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error 'ab (+ 1 2)))))))
@@ -608,7 +631,7 @@
                                            "(raise (quote ef))"
                                            newline-char
                                            "  ..." newline-char)
-                            (call-with-output-string
+                            (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 #:port p)
                                 (test-error 'ab (raise 'ef)))))))
@@ -626,7 +649,7 @@
                        (string= (string-append (TAP-header 1)
                                                "ok 1 - " group-name
                                                newline-char)
-                                (call-with-output-string
+                                (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 #:port p)
                                     (test-group-begin group-name)
@@ -648,7 +671,7 @@
                        (string= (string-append (TAP-header 1)
                                                "ok 1 - " group-name
                                                newline-char)
-                                (call-with-output-string
+                                (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 #:port p)
                                     (test-group-begin group-name)
@@ -672,7 +695,7 @@
                        (string= (string-append (TAP-header 1)
                                                "ok 1 - " group-name
                                                newline-char)
-                                (call-with-output-string
+                                (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 #:port p)
                                     (test-group-begin group-name)
@@ -706,7 +729,7 @@
                                                "  evaluated: " newline-char
                                                "    arg0: #f" newline-char
                                                "  ..." newline-char)
-                                (call-with-output-string
+                                (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 #:port p)
                                     (test-group-begin group-name)
@@ -739,7 +762,7 @@
                                                "  got: " newline-char
                                                "    expr0: #t" newline-char
                                                "  ..." newline-char)
-                                (call-with-output-string
+                                (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 #:port p)
                                     (test-group-begin group-name)
@@ -757,7 +780,7 @@
 (display (response (get-count) "group ERROR begin twice"
                    (let ((group-name "v83Avn")
                          (had-error #f))
-                     (call-with-output-string
+                     (call-with-string-output-port
                        (lambda (p)
                          (catch #t (lambda ()
                                      (test-begin 1 #:port p)
@@ -771,7 +794,7 @@
 (display (response (get-count) "group ERROR end group not started"
                    (let ((group-name "vv93n")
                          (had-error #f))
-                     (call-with-output-string
+                     (call-with-string-output-port
                        (lambda (p)
                          (catch #t (lambda ()
                                      (test-begin 1 #:port p)
@@ -787,7 +810,7 @@
 (display (response (get-count) "test-group-with-cleanup no errors"
                    (let ((finished #f)
                          (cleaned-up #f))
-                     (call-with-output-string
+                     (call-with-string-output-port
                        (lambda (p)
                          (test-begin 1 #:port p)
                          (test-group-with-cleanup "avu3n"
@@ -804,7 +827,7 @@
                    "test-group-with-cleanup error in body"
                    (let ((finished #f)
                          (cleaned-up #f))
-                     (call-with-output-string
+                     (call-with-string-output-port
                        (lambda (p)
                          (test-begin 1 #:port p)
                          (test-group-with-cleanup "avu3n"
