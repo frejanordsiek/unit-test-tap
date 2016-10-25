@@ -70,7 +70,7 @@ dnl Check all required modules.
 GUILE_MODULE_REQUIRED([rnrs base])
 GUILE_MODULE_REQUIRED([rnrs lists])
 GUILE_MODULE_REQUIRED([rnrs io ports])
-GUILE_MODULE_REQUIRED([rnrs io exceptions])
+GUILE_MODULE_REQUIRED([rnrs exceptions])
 
 
 
