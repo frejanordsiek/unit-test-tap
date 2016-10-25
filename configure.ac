@@ -28,7 +28,7 @@ AC_CONFIG_MACRO_DIR([m4])
 m4_include([m4/guile.m4])
 m4_include([m4/guile_additional.m4])
 
-AC_CONFIG_AUX_DIR([config])
+AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([gnu dist-xz -Wall -Werror])
 
 AC_COPYRIGHT(UNITTESTTAP_CONFIGURE_COPYRIGHT)
