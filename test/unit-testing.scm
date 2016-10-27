@@ -60,7 +60,20 @@
                 (syntax-rules ()
                   ((cons*) '())
                   ((cons* arg0) arg0)
-                  ((cons* arg0 arg1 . args) (cons arg0 (cons* arg1 . args)))))))
+                  ((cons* arg0 arg1 . args) (cons arg0 (cons* arg1 . args)))))
+              ;; Make R6RS for-all
+              (define-syntax for-all
+                (syntax-rules ()
+                  ((for-all proc . args)
+                   (call-with-current-continuation
+                    (lambda (return)
+                      (map (lambda ( arg0 . other-args)
+                             (if (if (= 0 (length other-args))
+                                     (proc arg0)
+                                     (apply proc (append (list arg0) other-args)))
+                                 #t
+                                 (return #f))) . args)
+                      (return #t))))))))
 
 
 ;;; Define SRFI-1 iota for implementations that won't have it in the default
