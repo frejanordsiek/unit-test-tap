@@ -37,4 +37,5 @@
           (rnrs io simple (6))
           (rnrs io ports (6))
           (rnrs exceptions (6))
+          (rnrs programs (6)))
 

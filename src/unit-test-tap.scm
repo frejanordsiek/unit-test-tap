@@ -50,6 +50,7 @@
   #:use-module ((rnrs io ports) #:version (6))
   #:use-module ((rnrs io simple) #:version (6))
   #:use-module ((rnrs exceptions) #:version (6))
+  #:use-module ((rnrs programs) #:version (6))
   #:export (test-port test-yaml-prefix test-count test-number
                       test-number-passed test-number-failed
                       test-number-xfailed test-number-xpassed

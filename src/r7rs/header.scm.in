@@ -32,7 +32,8 @@
           test-assert test-eq test-eqv test-equal
           test-approximate test-error)
   (import (scheme base)
-          (scheme write))
+          (scheme write)
+          (scheme process-context))
   (begin
     ;; Make the R6RS call-with-string-output-port and
     ;; open-string-output-port in terms of R7RS
