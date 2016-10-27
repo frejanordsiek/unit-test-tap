@@ -37,10 +37,10 @@
     ;; Make the R6RS call-with-string-output-port and
     ;; open-string-output-port in terms of R7RS
     ;; open-output-string and get-output-string.
-    (define open-string-output-port
-      (lambda ()
-        (let ((p (open-output-string)))
-          (values p (lambda () (get-output-string p))))))
+    ;(define open-string-output-port
+    ;  (lambda ()
+    ;    (let ((p (open-output-string)))
+    ;      (values p (lambda () (get-output-string p))))))
     (define call-with-string-output-port
       (lambda (proc)
         (let ((p (open-output-string)))

@@ -26,16 +26,21 @@
 
 (import (unit-test-tap))
 
-(cond-expand ((or r6rs guile-2)
+(cond-expand ((or r6rs guile-2 guile)
               (import (rnrs base (6)))
               (import (only (rnrs lists (6)) for-all))
-              (import (only (rnrs exceptions (6)) raise))
+              (import (prefix (rnrs exceptions (6)) excpt-))
               (import (only (rnrs io ports (6))
                             call-with-string-output-port
-                            open-string-output-port)))
+                            open-string-output-port))
+              (import (rnrs io simple (6))))
              (r7rs
-              (import (scheme base))
+              (except (scheme base) guard raise)
+              (prefix (only (scheme base) guard raise) excpt-)
               (import (scheme write))
+              ;; Short utility procedure to check if a string is 0 length.
+              (define string-null?
+                (lambda (s) (= 0 (string-length s))))
               ;; Make the R6RS call-with-string-output-port and
               ;; open-string-output-port in terms of R7RS
               ;; open-output-string and get-output-string.
@@ -55,6 +60,15 @@
 ;;; Set a different random state each time
 (set! *random-state* (random-state-from-platform))
 
+;;; Define SRFI-1 iota for implementations that won't have it in the default
+;;; environment
+(define iota
+  (lambda (n)
+    (let loop ((m (- n 1)) (lst '()))
+      (if (= m -1)
+          lst
+          (loop (- m 1) (cons m lst))))))
+
 ;;; Helper function to basically get the same result as ice-9 format
 ;;; but using string ports instead.
 (define-syntax my-format
@@ -64,6 +78,7 @@
        (lambda (p) (if (string= fmt "~a")
                        (display obj p)
                        (write obj p)))))))
+
 
 ;;; Make a function that returns a random integer between a and b
 ;;; inclusive
@@ -129,7 +144,7 @@
                               (string= (TAP-header n)
                                        (call-with-string-output-port
                                          (lambda (p)
-                                           (test-begin n #:port p)))))
+                                           (test-begin n 'port p)))))
                             (map (lambda (x) (random-int 1 100))
                                  (iota 10)))))
 
@@ -143,7 +158,7 @@
                         (let ((pass #f))
                           (let-values (((p get-output)
                                         (open-string-output-port)))
-                            (test-begin n #:port p #:yaml-prefix prefix)
+                            (test-begin n 'port p 'yaml-prefix prefix)
                             (set! pass
                               (and (string= (TAP-header n)
                                             (get-output))
@@ -177,7 +192,7 @@
                                        ("SKIP" . 4)
                                        ("EVAL EXCEPTION" . 1))))))
        (let-values (((p get-output) (open-string-output-port)))
-         (test-begin number #:port p #:yaml-prefix prefix)
+         (test-begin number 'port p 'yaml-prefix prefix)
          ;; The test is the iteration over all the expressions till there
          ;; is a failure
          (display
@@ -192,10 +207,10 @@
                  ;; what the output should be, check the output, and check
                  ;; the counts for each kind of test.
                  (let* ((x (if (string= state "EVAL EXCEPTION")
-                               '(raise 'aive)
+                               '(excpt-raise 'aive)
                                (car items0)))
                         (y (if (string= state "EVAL EXCEPTION")
-                               '(raise 'aive)
+                               '(excpt-raise 'aive)
                                (car items1)))
                         (new-total (+ total count))
                         ;; Calculate the expected counts
@@ -241,15 +256,15 @@
                         (xfail (or (string= state "XFAIL")
                                    (string= state "XPASS"))))
                    (cond ((string= which "assert")
-                          (test-assert x name #:skip skip #:xfail xfail))
+                          (test-assert x name 'skip skip 'xfail xfail))
                          ((string= which "eq?")
-                          (test-eq x y name #:skip skip #:xfail xfail))
+                          (test-eq x y name 'skip skip 'xfail xfail))
                          ((string= which "eqv?")
-                          (test-eqv x y name #:skip skip #:xfail xfail))
+                          (test-eqv x y name 'skip skip 'xfail xfail))
                          ((string= which "equal?")
-                          (test-equal x y name #:skip skip #:xfail xfail))
+                          (test-equal x y name 'skip skip 'xfail xfail))
                          (else (test-approximate x y tol name
-                                                 #:skip skip #:xfail xfail)))
+                                                 'skip skip 'xfail xfail)))
                    ;; Append the output for the respective state.
                    (set! output
                      (cond ((string= state "PASS")
@@ -443,7 +458,7 @@
                                            "ok 1" newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
+                                (test-begin 1 'port p)
                                 (test-pred ((lambda () #t))))))))
 
 ;;; 3 args
@@ -452,7 +467,7 @@
                                            "ok 1" newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
+                                (test-begin 1 'port p)
                                 (test-pred ((lambda ( . args)
                                               (apply + args))
                                             1 2 3)))))))
@@ -463,7 +478,7 @@
                                            "ok 1" newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
+                                (test-begin 1 'port p)
                                 (test-pred ((lambda ( . args)
                                               (apply * args))
                                             1 2 3 0 -1 2.2)))))))
@@ -481,15 +496,15 @@
                                            "    expr0: 1" newline-char
                                            "    expr1: 2" newline-char
                                            "    expr2: 3" newline-char
-                                           "    expr3: (raise (quote blah))"
+                                           "    expr3: (excpt-raise (quote blah))"
                                            newline-char
                                            "  ..." newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
+                                (test-begin 1 'port p)
                                 (test-pred ((lambda ( . args)
                                               (apply * args))
-                                            1 2 3 (raise 'blah))))))))
+                                            1 2 3 (excpt-raise 'blah))))))))
 
 ;;; Predicate exception
 (display (response (get-count) "test-pred PRED EXCEPTION"
@@ -497,7 +512,7 @@
                                            "not ok 1" newline-char
                                            "  ---" newline-char
                                            "  message: Error thrown "
-                                           "applying raise"
+                                           "applying excpt-raise"
                                            newline-char
                                            "  error: en" newline-char
                                            "  got: " newline-char
@@ -508,8 +523,8 @@
                                            "  ..." newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
-                                (test-pred (raise 'en)))))))
+                                (test-begin 1 'port p)
+                                (test-pred (excpt-raise 'en)))))))
 
 
 ;;; Check test-error
@@ -520,7 +535,7 @@
                                            "ok 1" newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
+                                (test-begin 1 'port p)
                                 (test-error #t (+ 1 "a")))))))
 
 ;;; Catch no error when catching all errors (FAIL)
@@ -538,7 +553,7 @@
                                            "  ..." newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
+                                (test-begin 1 'port p)
                                 (test-error #t (+ 1 2)))))))
 
 ;;; Catch no error when catching all errors (XFAIL)
@@ -557,8 +572,8 @@
                                            "  ..." newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
-                                (test-error #t (+ 1 2) #:xfail #t))))))
+                                (test-begin 1 'port p)
+                                (test-error #t (+ 1 2) 'xfail #t))))))
 
 ;;; Catch an error when catching all errors (XPASS)
 (display (response (get-count) "test-error catch all XPASS"
@@ -575,8 +590,8 @@
                                            "  ..." newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
-                                (test-error #t (+ 1 "a") #:xfail #t))))))
+                                (test-begin 1 'port p)
+                                (test-error #t (+ 1 "a") 'xfail #t))))))
 
 ;;; Skip catch no error when catching all errors (SKIP)
 (display (response (get-count) "test-error catch all SKIP"
@@ -584,8 +599,8 @@
                                            "ok 1 # SKIP" newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
-                                (test-error #t (+ 1 2) #:skip #t))))))
+                                (test-begin 1 'port p)
+                                (test-error #t (+ 1 2) 'skip #t))))))
 
 
 ;;; Catch a specific error (PASS)
@@ -594,8 +609,8 @@
                                            "ok 1" newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
-                                (test-error 'ab (raise 'ab)))))))
+                                (test-begin 1 'port p)
+                                (test-error 'ab (excpt-raise 'ab)))))))
 
 ;;; Fail to catch anything while trying to catch a specific error (FAIL)
 (display (response (get-count) "test-error specific error none thrown FAIL"
@@ -612,7 +627,7 @@
                                            "  ..." newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
+                                (test-begin 1 'port p)
                                 (test-error 'ab (+ 1 2)))))))
 
 ;;; Catch wrong error while trying to catch a specific error (FAIL)
@@ -628,13 +643,13 @@
                                            "    expected: ab" newline-char
                                            "  got: " newline-char
                                            "    expr0: "
-                                           "(raise (quote ef))"
+                                           "(excpt-raise (quote ef))"
                                            newline-char
                                            "  ..." newline-char)
                             (call-with-string-output-port
                               (lambda (p)
-                                (test-begin 1 #:port p)
-                                (test-error 'ab (raise 'ef)))))))
+                                (test-begin 1 'port p)
+                                (test-error 'ab (excpt-raise 'ef)))))))
 
 
 ;;; Test group features.
@@ -651,7 +666,7 @@
                                                newline-char)
                                 (call-with-string-output-port
                                   (lambda (p)
-                                    (test-begin 1 #:port p)
+                                    (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (set! group-success
                                       (string= group-name
@@ -673,7 +688,7 @@
                                                newline-char)
                                 (call-with-string-output-port
                                   (lambda (p)
-                                    (test-begin 1 #:port p)
+                                    (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (test-assert #t name)
                                     (test-assert #t name)
@@ -697,9 +712,9 @@
                                                newline-char)
                                 (call-with-string-output-port
                                   (lambda (p)
-                                    (test-begin 1 #:port p)
+                                    (test-begin 1 'port p)
                                     (test-group-begin group-name)
-                                    (test-assert #f name #:xfail #t)
+                                    (test-assert #f name 'xfail #t)
                                     (test-assert #t name)
                                     (set! group-success
                                       (string= group-name
@@ -731,7 +746,7 @@
                                                "  ..." newline-char)
                                 (call-with-string-output-port
                                   (lambda (p)
-                                    (test-begin 1 #:port p)
+                                    (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (test-assert #f name)
                                     (test-assert #t name)
@@ -764,9 +779,9 @@
                                                "  ..." newline-char)
                                 (call-with-string-output-port
                                   (lambda (p)
-                                    (test-begin 1 #:port p)
+                                    (test-begin 1 'port p)
                                     (test-group-begin group-name)
-                                    (test-assert #t name #:xfail #t)
+                                    (test-assert #t name 'xfail #t)
                                     (test-assert #t name)
                                     (set! group-success
                                       (string= group-name
@@ -781,13 +796,12 @@
                    (let ((group-name "v83Avn")
                          (had-error #f))
                      (call-with-string-output-port
-                       (lambda (p)
-                         (catch #t (lambda ()
-                                     (test-begin 1 #:port p)
+                      (lambda (p)
+                        (excpt-guard (key (#t (set! had-error #t)))
+                                     (test-begin 1 'port p)
                                      (test-group-begin group-name)
                                      (test-group-begin group-name)
-                                     (set! had-error #f))
-                           (lambda (key . args) (set! had-error #t)))))
+                                     (set! had-error #f))))
                      had-error)))
 
 ;;; End unstarted group
@@ -795,12 +809,11 @@
                    (let ((group-name "vv93n")
                          (had-error #f))
                      (call-with-string-output-port
-                       (lambda (p)
-                         (catch #t (lambda ()
-                                     (test-begin 1 #:port p)
+                      (lambda (p)
+                        (excpt-guard (key (#t (set! had-error #t)))
+                                     (test-begin 1 'port p)
                                      (test-group-end)
-                                     (set! had-error #f))
-                           (lambda (key . args) (set! had-error #t)))))
+                                     (set! had-error #f))))
                      had-error)))
 
 
@@ -812,7 +825,7 @@
                          (cleaned-up #f))
                      (call-with-string-output-port
                        (lambda (p)
-                         (test-begin 1 #:port p)
+                         (test-begin 1 'port p)
                          (test-group-with-cleanup "avu3n"
                            (begin
                              (test-assert #t)
@@ -829,12 +842,12 @@
                          (cleaned-up #f))
                      (call-with-string-output-port
                        (lambda (p)
-                         (test-begin 1 #:port p)
+                         (test-begin 1 'port p)
                          (test-group-with-cleanup "avu3n"
                            (begin
                              (test-assert #t)
                              (test-assert #f)
-                             (raise 'ae)
+                             (excpt-raise 'ae)
                              (set! finished #t))
                            (set! cleaned-up #t))))
                      (and (not finished) cleaned-up

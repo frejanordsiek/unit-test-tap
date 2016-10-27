@@ -35,16 +35,20 @@
 ;;; as a single test for TAP output purposes (first one to FAIL or
 ;;; XPASS fails the whole group).
 ;;;
-;;; This module is not portable outside of Guile at this time. It
-;;; uses Guile specific optional and keyword argument handling lambda*,
-;;; Common Lisp style docstrings, and uses Guile specific module/library
-;;; declaration.
+;;; This module is not portable outside of Guile at this time. It uses
+;;; Common Lisp style docstrings, uses Guile specific module/library
+;;; declaration, and uses a couple Guile specific procedures.
 
 
 (define-module (unit-test-tap)
+  #:pure
   #:version (0 1)
   #:duplicates (check)
+  #:use-module ((rnrs base) #:version (6))
+  #:use-module ((rnrs control) #:version (6))
+  #:use-module ((rnrs lists) #:version (6))
   #:use-module ((rnrs io ports) #:version (6))
+  #:use-module ((rnrs io simple) #:version (6))
   #:use-module ((rnrs exceptions) #:version (6))
   #:export (test-port test-yaml-prefix test-count test-number
                       test-number-passed test-number-failed
@@ -57,6 +61,75 @@
                       test-pred
                       test-assert test-eq test-eqv test-equal
                       test-approximate test-error))
+
+;;; Define SRFI-1 iota
+(define iota
+  (lambda (n)
+    (let loop ((m (- n 1)) (lst '()))
+      (if (= m -1)
+          lst
+          (loop (- m 1) (cons m lst))))))
+
+;; Short utility procedure to check if a string is 0 length.
+    (define string-null?
+      (lambda (s) (= 0 (string-length s))))
+
+;;; Returns the given alist but with the entry for obj removed. The order of
+;;; the other entries is reversed.
+(define alist-remove
+  (lambda (obj alist)
+    (let loop ((new-alist '()) (al alist))
+      (if (null? al)
+          new-alist
+          (loop (if (eq? obj (car (car al)))
+                    new-alist
+                    (cons (car al) new-alist))
+                (cdr al))))))
+
+;;; Process optional and keyword arguments, both with default values,
+;;; where the keys are symbols. An alist of of argument-value pairs is
+;;; returned, where arguments not given are set to their defaults.
+;;; optionals should be alist of the optional argument names and their
+;;; default values. keyword-args should be the same. Then the actual
+;;; arguments to process are given as arguments.
+(define process-optional-args
+  (lambda (optionals keywords arguments)
+    "- Scheme Procedure: process-optional-args optionals keywords
+                                          arguments
+     Procedure to process the optional and keyword arguments contained
+     in ARGUMENTS where symbols are used as keywords. The optional
+     and keyword arguments to find must be given in OPTIONALS and
+     KEYWORDS respectively, which must be alists of argument name,
+     default value pairs. The results are returned as an alist
+     of argument name-value pairs with values set to defaults for
+     arguments that were not given."
+    (let opt-loop ((alist '()) (opt-args optionals) (args arguments))
+      ;; No more arguments to process.
+      (cond ((null? args) (append alist opt-args keywords))
+            ;; Done processing optional arguments - move on to keyword arguments.
+            ((or (null? opt-args) (assoc (car args) keywords))
+             ;; Must have an even number of remaining arguments and not have more than
+             ;; available options.
+             (if (or (odd? (length args)) (> (length args) (* 2 (length keywords))))
+                 (raise 'invalid-args)
+                 (let key-loop ((al (append alist opt-args)) (key-args keywords) (rargs args))
+                   ;; No more arguments to process
+                   (if (null? rargs)
+                       (append al key-args)
+                       ;; Check that the symbol for the current key-value pair is valid and
+                       ;; if it is, take it and go onto the next pair.
+                       (let ((key (car rargs))
+                             (val (car (cdr rargs)))
+                             (others (cdr (cdr rargs))))
+                         (if (not (assoc key key-args))
+                             (raise 'invalid-args)
+                             (key-loop (cons (cons key val) al)
+                                       (alist-remove key key-args)
+                                       others)))))))
+            ;; Another optional argument to process.
+            (else (opt-loop (cons (cons (car (car opt-args)) (car args)) alist)
+                            (cdr opt-args)
+                            (cdr args)))))))
 
 
 ;;; Set the variables to hold the port, prefix for yaml blocks,
@@ -233,14 +306,11 @@
     ((wrap-test (proc . args) args-skip-fail . extra-args)
      ;; Handle the optional name argument and keyword skip and xfail
      ;; arguments.
-     (let ((xname "")
-           (xskip #f)
-           (xxfail #f))
-       ((lambda* (#:optional (name "") #:key (skip #f) (xfail #f))
-          (set! xname name)
-          (set! xskip skip)
-          (set! xxfail xfail))
-        . extra-args)
+     (let* ((arg-alist (process-optional-args '((name . "")) '((skip . #f) (xfail . #f))
+                                              (list . extra-args)))
+            (xname (cdr (assoc 'name arg-alist)))
+            (xskip (cdr (assoc 'skip arg-alist)))
+            (xxfail (cdr (assoc 'xfail arg-alist))))
        ;; Completely skip if in a group that has already had a failure
        (if (or (string-null? *group-name*) (not *group-failed*))
            ;; The result will be put in msg, which will be null if PASS.
@@ -430,8 +500,8 @@
 ;;;
 ;;; Uses Guile specific keyword argument handling (lambda*).
 (define test-begin
-  (lambda* (n #:key (port (current-output-port)) (yaml-prefix ""))
-    "- Scheme Procedure: test-begin n [#:port p] [#:yaml-prefix prefix]
+  (lambda (n . args)
+    "- Scheme Procedure: test-begin n ['port p] ['yaml-prefix prefix]
      Starts the unit testing framework/suite that is expected to have
      N tests. All counters are reset and the TAP header is written to
      output. The test writes its output to (current-output-port), or
@@ -439,9 +509,17 @@
      port). The YAML lines in the diagnostic messages for FAIL, XFAIL,
      and XPASS tests are prefixed with PREFIX if it is given. End
      testing with (test-end)."
+    ;; Turn args into an alist of the key values and thrown an error if
+    ;; we don't have the right number of pairs (0, 1, 2) or if there
+    ;; is an invalid key. Then, extract port and yaml-prefix and set their
+    ;; globals.
+    (let ((arg-alist (process-optional-args
+                      '()
+                      (list (cons 'port (current-output-port)) (cons 'yaml-prefix ""))
+                      args)))
+      (set! *out-port* (cdr (assoc 'port arg-alist)))
+      (set! *yaml-block-prefix* (cdr (assoc 'yaml-prefix arg-alist))))
     (set! *number* n)
-    (set! *yaml-block-prefix* yaml-prefix)
-    (set! *out-port* port)
     (set! *count* 1)
     (set! *number-passed* 0)
     (set! *number-failed* 0)
@@ -450,10 +528,10 @@
     (set! *number-skipped* 0)
     (set! *group-name* "")
     (set! *group-failed* #f)
-    (display "TAP version 13" port)
-    (newline port)
-    (display (string-append "1.." (number->string n)) port)
-    (newline port)))
+    (display "TAP version 13" *out-port*)
+    (newline *out-port*)
+    (display (string-append "1.." (number->string n)) *out-port*)
+    (newline *out-port*)))
 
 
 ;;; End testing, which causes an exit with the status determined
@@ -478,9 +556,9 @@
      tests within a group pass or fail together as if they were a
      single test. End the group with (test-group-end)."
     (cond ((not (string? name))
-           (throw 'test-group-begin "name must be string" name))
+           (raise 'test-group-begin))
           ((not (string-null? *group-name*))
-           (throw 'test-group-begin "already in test group" *group-name*))
+           (raise 'test-group-begin))
           (else (begin
                   (set! *group-name* name)
                   (set! *group-failed* #f))))))
@@ -493,7 +571,7 @@
      Ends the current test group. If all tests in it passed, the
      group is considered to be a PASS."
     (if (string-null? *group-name*)
-        (throw 'test-group-end "a group has not been begun")
+        (raise 'test-group-end)
         (begin
           (if (not *group-failed*)
               (begin
@@ -532,17 +610,17 @@
 ;;; true.
 (define-syntax test-pred
   (syntax-rules ()
-    "- Scheme Macro: (test-pred (pred . args) [name] [#:skip skip]
-                           [#:xfail xfail])
+    "- Scheme Macro: (test-pred (pred . args) [name] ['skip skip]
+                           ['xfail xfail])
      Asserts that the evaluation of (PRED . ARGS) is non #f. The
      test takes an optional NAME. Indicate whether the test should
      be skipped or is expected to fail with the keyword arguments
-     #:skip and #:xfail set to non #f (the default is #f). Predicates that
+     'skip and 'xfail set to non #f (the default is #f). Predicates that
      take any number of arguments, including zero, are supported. An
      example test to see if the result of two mathematical expressions
      are equal but that one expects it to fail would be
 
-          (test-pred (= (* 2 3) (* 2 4)) \"example\" #:xfail #t)"
+          (test-pred (= (* 2 3) (* 2 4)) \"example\" 'xfail #t)"
     ((test-pred (pred . args) . extra-args)
      (wrap-test (lowlevel-test-pred pred (symbol->string 'pred) . args)
                 2 . extra-args))))
@@ -551,14 +629,14 @@
 ;;; Test to catch specified errors
 (define-syntax test-error
   (syntax-rules ()
-    "- Scheme Macro: (test-error error-type expr [name] [#:skip skip]
-                            [#:xfail xfail])
+    "- Scheme Macro: (test-error error-type expr [name] ['skip skip]
+                            ['xfail xfail])
      Asserts that evaluating EXPR throws an exception of type
      ERROR-TYPE (set to #t to indicate any exception type).
      Throwing no exception or an exception of a different type is
      considered a failure. The test takes an optional NAME. Indicate
      whether the test should be skipped or is expected to fail with
-     the keyword arguments #:skip and #:xfail set to non #f (the
+     the keyword arguments 'skip and 'xfail set to non #f (the
      default is #f)."
     ((test-error error-type expr . extra-args)
      (wrap-test (lowlevel-test-error error-type expr)
@@ -569,11 +647,11 @@
 ;;; logical true.
 (define-syntax test-assert
   (syntax-rules ()
-    "- Scheme Macro: (test-assert expr [name] [#:skip skip]
-                             [#:xfail xfail])
+    "- Scheme Macro: (test-assert expr [name] ['skip skip]
+                             ['xfail xfail])
      Asserts that EXPR evaluates to non #f. The test takes an optional
      NAME. Indicate whether the test should be skipped or is expected
-     to fail with the keyword arguments #:skip and #:xfail set to
+     to fail with the keyword arguments 'skip and 'xfail set to
      non #f (the default is #f)."
     ((test-assert expr . extra-args)
      (wrap-test (lowlevel-test-pred (lambda (x) x) "#t" expr)
@@ -583,11 +661,11 @@
 ;;; Convenience test that does eq? with two arguments through test-pred
 (define-syntax test-eq
   (syntax-rules ()
-    "- Scheme Macro: (test-eq expr0 expr1 [name] [#:skip skip]
-                         [#:xfail xfail])
+    "- Scheme Macro: (test-eq expr0 expr1 [name] ['skip skip]
+                         ['xfail xfail])
      Asserts (eq? EXPR0 EXPR1). The test takes an optional NAME.
      Indicate whether the test should be skipped or is expected
-     to fail with the keyword arguments #:skip and #:xfail set to
+     to fail with the keyword arguments 'skip and 'xfail set to
      non #f (the default #f)."
     ((test-eq expr0 expr1 . extra-args)
      (test-pred (eq? expr0 expr1) . extra-args))))
@@ -596,11 +674,11 @@
 ;;; Convenience test that does eqv? with two arguments through test-pred
 (define-syntax test-eqv
   (syntax-rules ()
-    "- Scheme Macro: (test-eqv expr0 expr1 [name] [#:skip skip]
-                          [#:xfail xfail])
+    "- Scheme Macro: (test-eqv expr0 expr1 [name] ['skip skip]
+                          ['xfail xfail])
      Asserts (eqv? EXPR0 EXPR1). The test takes an optional NAME.
      Indicate whether the test should be skipped or is expected
-     to fail with the keyword arguments #:skip and #:xfail set to
+     to fail with the keyword arguments 'skip and 'xfail set to
      non #f (the default is #f)."
     ((test-eqv expr0 expr1 . extra-args)
      (test-pred (eqv? expr0 expr1) . extra-args))))
@@ -609,11 +687,11 @@
 ;;; Convenience test that does equal? with two arguments through test-pred
 (define-syntax test-equal
   (syntax-rules ()
-    "- Scheme Macro: (test-equal expr0 expr1 [name] [#:skip skip]
-                            [#:xfail xfail])
+    "- Scheme Macro: (test-equal expr0 expr1 [name] ['skip skip]
+                            ['xfail xfail])
      Asserts (equal? EXPR0 EXPR1). The test takes an optional NAME.
      Indicate whether the test should be skipped or is expected
-     to fail with the keyword arguments #:skip and #:xfail set to
+     to fail with the keyword arguments 'skip and 'xfail set to
      non #f (the default #f)."
     ((test-equal expr0 expr1 . extra-args)
      (test-pred (equal? expr0 expr1) . extra-args))))
@@ -624,11 +702,11 @@
 (define-syntax test-approximate
   (syntax-rules ()
     "- Scheme Macro: (test-approximate expr0 expr1 tolerance [name]
-                                  [#:skip skip] [#:xfail xfail])
+                                  ['skip skip] ['xfail xfail])
      Asserts that the absolute value of the numerical difference between
      EXPR0 and EXPR1 is less than or equal to TOLERANCE. The test takes
      an optional NAME. Indicate whether the test should be skipped or is
-     expected to fail with the keyword arguments #:skip and #:xfail set
+     expected to fail with the keyword arguments 'skip and 'xfail set
      to non #f (the default #f)."
     ((test-approximate expr0 expr1 tolerance . extra-args)
      (wrap-test (lowlevel-test-pred

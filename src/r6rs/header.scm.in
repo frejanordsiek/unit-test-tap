@@ -32,5 +32,9 @@
           test-assert test-eq test-eqv test-equal
           test-approximate test-error)
   (import (rnrs base (6))
+          (rnrs control (6))
+          (only (rnrs lists (6)) assoc cons*)
+          (rnrs io simple (6))
           (rnrs io ports (6))
-          (rnrs exceptions (6)))
+          (rnrs exceptions (6))
+
