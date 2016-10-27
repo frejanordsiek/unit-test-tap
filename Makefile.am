@@ -44,9 +44,9 @@ GUILD_FLAGS = -Wunsupported-warning -Wunbound-variable -Warity-mismatch \
 
 # Sources and targets
 
-BUILT_SOURCES = \
-	src/r7rs/unit-test-tap.scm \
-	src/r6rs/unit-test-tap.scm
+R6RS_TARGET = src/r6rs/unit-test-tap.scm
+R7RS_TARGET = src/r7rs/unit-test-tap.scm
+BUILT_SOURCES = $(R6RS_TARGET) $(R7RS_TARGET)
 
 SOURCES = src/unit-test-tap.scm
 
@@ -55,8 +55,8 @@ GOBJECTS = src/unit-test-tap.go
 
 # Tests
 
-TESTS = test/unit-testing.test
-TESTSOURCES = $(TESTS:%.test=%.scm)
+TESTS = test/guile.test test/guile-r6rs.test
+TEST_SOURCE = test/unit-testing.scm
 
 TEST_LOG_DRIVER = \
 	env AM_TAP_AWK='$(AWK)' \
@@ -83,29 +83,39 @@ EXTRA_DIST = $(SOURCES) $(TESTSOURCES) \
 	$(STRIP_GUILE_AWK_FILE)
 
 CLEANFILES = $(GOBJECTS) $(BUILT_SOURCES) \
-	$(srcdir)/doc/unit-test-tap.info $(TESTS) \
+	$(srcdir)/doc/unit-test-tap.info $(TESTS)
 MAINTAINERCLEANFILES = Makefile.in
 
 
 # Build templates
 
-src/r7rs/unit-test-tap.scm: src/unit-test-tap.scm src/r7rs/header.scm.in
+# Built sources
+
+src/r7rs/unit-test-tap.scm: $(SOURCES) src/r7rs/header.scm.in
 	cp $(top_srcdir)/src/r7rs/header.scm.in $@
 	$(STRIP_GUILE) $< | $(SED) -e 's/^/    /g' >> $@
 	echo '    ))' >> $@
 
-src/r6rs/unit-test-tap.scm: src/unit-test-tap.scm src/r6rs/header.scm.in
+src/r6rs/unit-test-tap.scm: $(SOURCES) src/r6rs/header.scm.in
 	cp $(top_srcdir)/src/r6rs/header.scm.in $@
 	$(STRIP_GUILE) $< | $(SED) -e 's/^/  /g' >> $@
 	echo '  )' >> $@
 
-SUFFIXES = .scm .go .test
+# Tests - shell scripts
 
+test/guile.test: $(TEST_SOURCE) src/unit-test-tap.scm
+	echo '#!$(SHELL)' > $@
+	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src -s $<" >> $@
+	chmod +x $@
+
+test/guile-r6rs.test: $(TEST_SOURCE) src/r6rs/unit-test-tap.scm
+	echo '#!$(SHELL)' > $@
+	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src/r6rs -s $<" >> $@
+	chmod +x $@
+
+SUFFIXES = .scm .go
+
+# Compile
 .scm.go:
 	$(GUILD) compile $(GUILD_FLAGS) -L $(top_srcdir)/src -o $@ $^
 
-# shell scripts to run the respective scheme file through guile
-.scm.test: src/unit-test-tap.scm
-	echo '#!$(SHELL)' > $@
-	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src -s $^" >> $@
-	chmod +x $@

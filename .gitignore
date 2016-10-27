@@ -12,6 +12,7 @@
 # Testing output
 *.log
 *.trs
+*.test
 
 # Packaging
 config.status
