@@ -1,4 +1,4 @@
-;;; test-unit-testing.scm --- test the unit-test-tap module
+;;; unit-testing.scm --- test the unit-test-tap module
 ;;; coding: utf-8
 
 ;;; unit-test-tap - scheme unit testing framework with TAP output
