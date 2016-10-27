@@ -54,7 +54,13 @@
                     (proc p)
                     (let ((out-s (get-output-string p)))
                       (close-port p)
-                      out-s))))))
+                      out-s))))
+              ;; Make R6RS cons*
+              (define-syntax cons*
+                (syntax-rules ()
+                  ((cons*) '())
+                  ((cons* arg0) arg0)
+                  ((cons* arg0 arg1 . args) (cons arg0 (cons* arg1 . args)))))))
 
 
 ;;; Set a different random state each time
