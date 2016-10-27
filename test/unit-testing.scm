@@ -63,9 +63,6 @@
                   ((cons* arg0 arg1 . args) (cons arg0 (cons* arg1 . args)))))))
 
 
-;;; Set a different random state each time
-(set! *random-state* (random-state-from-platform))
-
 ;;; Define SRFI-1 iota for implementations that won't have it in the default
 ;;; environment
 (define iota
@@ -84,14 +81,6 @@
        (lambda (p) (if (string= fmt "~a")
                        (display obj p)
                        (write obj p)))))))
-
-
-;;; Make a function that returns a random integer between a and b
-;;; inclusive
-(define random-int
-  (lambda (a b)
-    (+ a (random (- b a)))))
-
 
 ;;; Get the newline character
 (define newline-char (call-with-string-output-port newline))
@@ -151,7 +140,7 @@
                                        (call-with-string-output-port
                                          (lambda (p)
                                            (test-begin n 'port p)))))
-                            (map (lambda (x) (random-int 1 100))
+                            (map (lambda (x) (+ 1 x))
                                  (iota 10)))))
 
 ;;; Test initialization of variables by test-begin for a random
@@ -176,7 +165,7 @@
                                    (not (test-group-failed))))
                             (close-port p))
                           pass))
-                      (map (lambda (x) (random-int 1 100)) (iota number))
+                      (map (lambda (x) (+ 1 x)) (iota number))
                       (map (lambda (x) (number->string x)) (iota number))))))
 
 ;;; Macro to check test-assert/eq/eqv/equal/approximate for a single
