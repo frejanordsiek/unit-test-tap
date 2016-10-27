@@ -1,6 +1,8 @@
 ;;; unit-test-tap.scm --- TAP output unit-tests in the spirit of SRFI-64
 ;;; coding: utf-8
 
+#!r6rs
+
 ;;; unit-test-tap - scheme unit testing framework with TAP output
 ;;; Copyright (C) 2016 Freja Nordsiek
 ;;;
