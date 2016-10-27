@@ -52,11 +52,25 @@ AM_CONDITIONAL([COMPILE_SCM], [test x$compile_scm = xyes])
 AC_MSG_CHECKING([for whether to compile scheme files to go files (--enable-compile-scm)])
 AC_MSG_RESULT([$compile_scm])
 
+dnl allow tests with other scheme implementations
+
+dnl chicken
+AC_ARG_ENABLE([test_chicken],
+AS_HELP_STRING([--enable-test-chicken], [try to run tests n Chicken @<:@default=yes@:>@]),
+[case "${enableval}" in
+  yes) test_chicken=yes ;;
+  no)  test_chicken=no ;;
+  *) AC_MSG_ERROR([bad value ${enableval} for --enable-test-chicken]) ;;
+esac],[test_chicken=yes])
+AC_MSG_CHECKING([for whether to try to use Chicken for tests (--enable-test-chicken)])
+AC_MSG_RESULT([$test_chicken])
+
 
 AC_PROG_INSTALL
 AC_PROG_AWK
 AC_PROG_SED
 
+dnl Check for GUILE
 
 GUILE_PKG([$with_guile 2.2 2.0])
 GUILE_PROGS
@@ -77,6 +91,31 @@ GUILE_MODULE_REQUIRED([rnrs programs])
 
 
 
+dnl Look for Chicken if that is enabled.
+use_chicken=no
+if test x$test_chicken = xyes ; then
+  AC_MSG_NOTICE([checking for Chicken with R7RS])
+  AC_PATH_PROG(CHICKEN, [chicken])
+  AC_PATH_PROG(CHICKEN_CSI, [csi])
+  if test "$CHICKEN" != "" -a "$CHICKEN_CSI" != "" ; then
+    AC_MSG_CHECKING([checking for the chicken r7rs extension])
+    _junk=`$CHICKEN_CSI -R r7rs -q -b -w -e "(display \"yes\")"`
+    if test $? = "0" ; then
+      use_chicken=yes
+    else
+      _junk=no
+    fi
+  else
+    _junk=no
+  fi
+  AC_MSG_RESULT([$_junk])
+  if test "$use_chicken" = "yes" ; then
+    AC_MSG_NOTICE([can do testing with Chicken with R7RS])
+  else
+    AC_MSG_WARN([cannot test with Chicken: Chicken not found or it does not support R7RS])
+  fi
+fi
+AM_CONDITIONAL([TEST_USING_CHICKEN], [test x$use_chicken = xyes])
 
 
 AC_CONFIG_FILES([Makefile])

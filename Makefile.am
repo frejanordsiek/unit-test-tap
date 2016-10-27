@@ -55,7 +55,15 @@ GOBJECTS = src/unit-test-tap.go
 
 # Tests
 
-TESTS = test/guile.test test/guile-r6rs.test
+GUILE_TESTS = test/guile.test test/guile-r6rs.test
+CHICKEN_TESTS = test/chicken-r7rs.test
+ALL_TESTS = $(GUILE_TESTS) $(CHICKEN_TESTS)
+
+TESTS = $(GUILE_TESTS)
+if TEST_USING_CHICKEN
+TESTS += $(CHICKEN_TESTS)
+endif
+
 TEST_SOURCE = test/unit-testing.scm
 
 TEST_LOG_DRIVER = \
@@ -83,7 +91,7 @@ EXTRA_DIST = $(SOURCES) $(TESTSOURCES) \
 	$(STRIP_GUILE_AWK_FILE)
 
 CLEANFILES = $(GOBJECTS) $(BUILT_SOURCES) \
-	$(srcdir)/doc/unit-test-tap.info $(TESTS)
+	$(srcdir)/doc/unit-test-tap.info $(ALL_TESTS)
 MAINTAINERCLEANFILES = Makefile.in
 
 
@@ -111,6 +119,11 @@ test/guile.test: $(TEST_SOURCE) src/unit-test-tap.scm
 test/guile-r6rs.test: $(TEST_SOURCE) src/r6rs/unit-test-tap.scm
 	echo '#!$(SHELL)' > $@
 	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src/r6rs -s $<" >> $@
+	chmod +x $@
+
+test/chicken-r7rs.test: src/r7rs/unit-test-tap.scm $(TEST_SOURCE)
+	echo '#!$(SHELL)' > $@
+	echo "$(CHICKEN_CSI) -R r7rs -b -w -q $^" >> $@
 	chmod +x $@
 
 SUFFIXES = .scm .go
