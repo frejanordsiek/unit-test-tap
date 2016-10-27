@@ -35,8 +35,8 @@
                             open-string-output-port))
               (import (rnrs io simple (6))))
              (r7rs
-              (except (scheme base) guard raise)
-              (prefix (only (scheme base) guard raise) excpt-)
+              (import (except (scheme base) guard raise))
+              (import (prefix (only (scheme base) guard raise) excpt-))
               (import (scheme write))
               ;; Short utility procedure to check if a string is 0 length.
               (define string-null?
