@@ -92,7 +92,7 @@ MAINTAINERCLEANFILES = Makefile.in
 src/r7rs/unit-test-tap.scm: src/unit-test-tap.scm src/r7rs/header.scm.in
 	cp $(top_srcdir)/src/r7rs/header.scm.in $@
 	$(STRIP_GUILE) $< | $(SED) -e 's/^/    /g' >> $@
-	echo '    )' >> $@
+	echo '    ))' >> $@
 
 src/r6rs/unit-test-tap.scm: src/unit-test-tap.scm src/r6rs/header.scm.in
 	cp $(top_srcdir)/src/r6rs/header.scm.in $@
