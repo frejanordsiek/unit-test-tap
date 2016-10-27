@@ -28,16 +28,18 @@
 ;;; the tests themselves as keyword arguments instead of as separate
 ;;; procedures/macros. Additionally, the test-name argument has been
 ;;; moved to the end instead of being the first argument of each
-;;; test macro, so as to better work with Guile's optional and
+;;; test macro, so as to better work with custom optional and
 ;;; keyword argument facilities. Another major difference is that
 ;;; test-begin's cannot be nested, though test-group-begin does
 ;;; add one level of nesting where all the tests within a group count
 ;;; as a single test for TAP output purposes (first one to FAIL or
 ;;; XPASS fails the whole group).
 ;;;
-;;; This module is not portable outside of Guile at this time. It uses
-;;; Common Lisp style docstrings, uses Guile specific module/library
-;;; declaration, and uses a couple Guile specific procedures.
+;;; This module is not portable outside of Guile without some modification.
+;;; It uses Common Lisp style docstrings and a Guile specific module/library
+;;; declaration. The source package can make R6RS and R7RS versions of this
+;;; module/library by stripping these out and putting in R6RS and R7RS
+;;; library declarations.
 
 
 (define-module (unit-test-tap)
@@ -293,9 +295,6 @@
 ;;; if proc does not do any catching itself. Name is handled as an
 ;;; optional positional argument while skip and xfail are handled as
 ;;; keyword arguments.
-;;;
-;;; Uses Guile specific exception handling and optional and keyword
-;;; argument processing (lambda*).
 (define-syntax wrap-test
   (syntax-rules ()
     "- Scheme Macro: (wrap-test (proc . args) args-skip-fail . extra-args)
@@ -390,8 +389,6 @@
 ;;; arguments. The string name for the predicate must also be given.
 ;;; It can work with predicates that take any number of arguments,
 ;;; including zero.
-;;;
-;;; Uses Guile specific exception handling.
 (define-syntax lowlevel-test-pred
   (syntax-rules ()
     "- Scheme Macro: (lowlevel-test-pred pred pred-name . exprs)
@@ -456,8 +453,6 @@
 
 ;;; Raw test macro checking whether an expression throws a particular
 ;;; kind of error (or any error if set to #t).
-;;;
-;;; Uses Guile specific exception handling.
 (define-syntax lowlevel-test-error
   (syntax-rules ()
     "- Scheme Macro: (lowlevel-test-error error-type expr)
@@ -498,8 +493,6 @@
 
 ;;; Begin testing for n tests, by setting all the variables to initial
 ;;; values and outputting the TAP header.
-;;;
-;;; Uses Guile specific keyword argument handling (lambda*).
 (define test-begin
   (lambda (n . args)
     "- Scheme Procedure: test-begin n ['port p] ['yaml-prefix prefix]
