@@ -463,8 +463,8 @@
                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
-                                (test-pred ((lambda ( . args)
-                                              (apply + args))
+                                (test-pred ((lambda (arg0 arg1 arg2)
+                                              (+ arg0 arg1 arg2))
                                             1 2 3)))))))
 
 ;;; 6 args
@@ -474,8 +474,8 @@
                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
-                                (test-pred ((lambda ( . args)
-                                              (apply * args))
+                                (test-pred ((lambda (arg0 arg1 arg2 arg3 arg4 arg5)
+                                              (* arg0 arg1 arg2 arg3 arg4 arg5))
                                             1 2 3 0 -1 2.2)))))))
 
 ;;; Eval exception
@@ -497,8 +497,8 @@
                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
-                                (test-pred ((lambda ( . args)
-                                              (apply * args))
+                                (test-pred ((lambda (arg0 arg1 arg2 arg3)
+                                              (* arg0 arg1 arg2 arg3))
                                             1 2 3 (excpt-raise 'blah))))))))
 
 ;;; Predicate exception
