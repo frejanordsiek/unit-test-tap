@@ -24,7 +24,7 @@ STRIP_GUILE = $(AWK) -f $(top_srcdir)/$(STRIP_GUILE_AWK_FILE)
 
 # Install directories for scm and go files.
 
-scmdir = $(GUILE_SITE_SCM)
+guilescmdir = $(GUILE_SITE_SCM)
 godir = $(GUILE_SITE_GO)
 
 # Need to make sure scheme files are installed before go files so
@@ -34,7 +34,7 @@ godir = $(GUILE_SITE_GO)
 # http://lists.gnu.org/archive/html/guile-devel/2010-07/msg00125.html
 
 guile_install_go_files = install-goDATA
-$(guile_install_go_files): install-scmDATA
+$(guile_install_go_files): install-guilescmDATA
 
 
 # GUILD compile flags.
@@ -67,8 +67,11 @@ GUILE_TESTS = test/guile.test test/guile-r6rs.test
 CHICKEN_TESTS = test/chicken-r7rs.test
 ALL_TESTS = $(GUILE_TESTS) $(CHICKEN_TESTS)
 
-TESTS = $(GUILE_TESTS)
-if TEST_USING_CHICKEN
+TESTS =
+if USE_GUILE
+TESTS += $(GUILE_TESTS)
+endif
+if USE_CHICKEN
 TESTS += $(CHICKEN_TESTS)
 endif
 
@@ -79,12 +82,18 @@ TEST_LOG_DRIVER = \
 
 # Files to build and/or install
 
-scm_DATA = $(SOURCES)
-if COMPILE_SCM
+if USE_GUILE
+guilescm_DATA = $(SOURCES)
+else
+guilescm_DATA =
+endif
+
+if COMPILE_GUILE
 go_DATA = $(GOBJECTS)
 else
 go_DATA =
 endif
+
 
 # Documentation
 

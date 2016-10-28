@@ -55,19 +55,25 @@ the library to Guile's bytecode format (go files), install the library
 into Guile's site directories for Scheme files and go files, build the
 documentation, and run unit tests on the library in both Guile and
 Chicken. The package is configured using the configure script, which
-takes user input to tune the build, finds and checks Guile (where Guile
-wants Scheme and go files to be installed and that the required
-libraries are available), and finds and checks Chicken for use in
-testing (default is yes). Inside the package directory, run
+takes user input to tune the build, finds and checks the desired Scheme
+implementations, and sets options for the different Scheme
+implementations. Inside the package directory, run
 
-    ./configure [--prefix=DIR] [--enable-compile-scm=yes/no] \
-        [--with-guile=X.Y] [--enable-test-chicken=yes/no]
+    ./configure [--prefix=DIR] [--with-guile=yes/no]] \
+        [--enable-guile-compile=yes/no] [--with-guile-version=X.Y] \
+        [--with-chicken=yes/no]
 
 where optional parameters can be used to set the base directory (prefix)
-for installing the documentation, whether to compile to Guile's bytecode
-format (default is yes), which Guile effective version to target and
-look for (default is 2.2, followed by 2.0 if 2.2 cannot be found), and
-whether to do unit tests using Chicken in addition to Guile.
+for installing the documentation, which Scheme implementations to target
+(default is no for each one), and additional options for each Scheme
+implementation. The supported target implementations are
+guile (--with-guile) and chicken (--with-chicken).
+
+For Guile, the scheme source files can optionally be compiled with the
+--enable-guile-compile option (default is yes) and the Guile
+effective version to target can be specified with the
+--with-guile-version option (default is 2.2, followed by 2.0 if 2.2
+cannot be found).
 
 Now that the Makefile has been made, one runs
 
@@ -76,7 +82,7 @@ Now that the Makefile has been made, one runs
 to build the documentation in info format and compile the library to
 Guile's bytecode depending on whether that was enabled or
 not. The library can be checked by running unit tests on it (using Guile
-and optionally Chicken) by running
+or Chicken) by running
 
     make check
 
