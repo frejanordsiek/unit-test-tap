@@ -605,12 +605,7 @@ output. The test writes its output to @code{(current-output-port)}, or
 @var{PORT} if it is given (it is expected to be an already opened output
 port). The YAML lines in the diagnostic messages for FAIL, XFAIL, and
 XPASS tests are prefixed with @var{PREFIX} if it is given. End testing
-with @ref{test-end}. The counters @xref{Counters} and parameters
-@xref{Test Suite Parameters} that this procedure sets can all be
-accessed and even set, though setting them will change the behavior
-of the test suite while it is being used (may or may not be desired).
-The other procedures and macros in this library will use and update
-them when they are called.
+with @ref{test-end}.
 @end deffn
 
 @scmanchorindex{test-end}
@@ -623,35 +618,34 @@ code of 0) or not (exit code of 1).
 @node Test Suite Parameters
 @section Test Suite Parameters
 
-The test suite parameters can be accessed by the following global
-variables. Note that they can be set, though that will affect the
-current test suite session.
+The test suite parameters can be read, after testing has started, by the
+following procedures.
 
-@scmanchorindex{*test-port*}
-@deffn {Scheme Variable} *test-port*
+@scmanchorindex{test-port}
+@deffn {Scheme Procedure} test-port
 Return the port that the test output is written to.
 @end deffn
 
-@scmanchorindex{*test-yaml-prefix*}
-@deffn {Scheme Variable} *test-yaml-prefix*
+@scmanchorindex{test-yaml-prefix}
+@deffn {Scheme Procedure} test-yaml-prefix
 Return the string prefix for the yaml diagnostic block lines written
 after FAIL, XFAIL, and XPASS tests.
 @end deffn
 
-@scmanchorindex{*test-group-name*}
-@deffn {Scheme Variable} *test-group-name*
+@scmanchorindex{test-group-name}
+@deffn {Scheme Procedure} test-group-name
 Return the name (string) of the currently entered group (@code{""} if
 none).
 @end deffn
 
-@scmanchorindex{*test-group-failed*}
-@deffn {Scheme Variable} *test-group-failed*
+@scmanchorindex{test-group-failed}
+@deffn {Scheme Procedure} test-group-failed
 Return whether the currently entered group has failed (one FAIL or XPASS
 test inside it) as a boolean.
 @end deffn
 
-@scmanchorindex{*test-number*}
-@deffn {Scheme Variable} *test-number*
+@scmanchorindex{test-number}
+@deffn {Scheme Procedure} test-number
 Return the total number (integer) of tests that are set to be done,  as
 set by the procedure @ref{test-begin}.
 @end deffn
@@ -660,26 +654,33 @@ set by the procedure @ref{test-begin}.
 @section Counters
 
 The number of tests done and their results are all kept track of in
-global counter variables. Note that they can be set, though that will
-affect the current test suite session.
+counters, which can be read by the following procedures.
 
-@scmanchorindex{*test-count*}
-@deffn {Scheme Variable} *test-count*
+@scmanchorindex{test-count}
+@deffn {Scheme Procedure} test-count
 Return the 1 based index (integer) of the current test to be done.
 @end deffn
 
-@scmanchorindex{*test-number-passed*}
-@scmanchorindex{*test-number-failed*}
-@scmanchorindex{*test-number-xfailed*}
-@scmanchorindex{*test-number-xpassed*}
-@scmanchorindex{*test-number-skipped*}
-@deffn {Scheme Variable} *test-number-passed*
-@deffnx {Scheme Variable} *test-number-failed*
-@deffnx {Scheme Variable} *test-number-xfailed*
-@deffnx {Scheme Variable} *test-number-xpassed*
-@deffnx {Scheme Variable} *test-number-skipped*
+@scmanchorindex{test-number-passed}
+@scmanchorindex{test-number-failed}
+@scmanchorindex{test-number-xfailed}
+@scmanchorindex{test-number-xpassed}
+@scmanchorindex{test-number-skipped}
+@deffn {Scheme Procedure} test-number-passed
+@deffnx {Scheme Procedure} test-number-failed
+@deffnx {Scheme Procedure} test-number-xfailed
+@deffnx {Scheme Procedure} test-number-xpassed
+@deffnx {Scheme Procedure} test-number-skipped
 Return the total number (integer) of tests that have passed, failed,
 xfailed, xpassed, or skipped so far respectively.
+@end deffn
+
+@scmanchorindex{increment-test-counter}
+@deffn {Scheme Procedure} increment-test-counter KEY
+Increments the counter whose name is in the string @var{KEY}. For
+@code{"test-group-failed"}, it is set to @code{#t}. This procedure is
+mostly meant for internal use, but has to be exported for the test
+macros to use on some scheme implementations.
 @end deffn
 
 @node Groups

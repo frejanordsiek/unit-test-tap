@@ -53,17 +53,18 @@
   #:use-module ((rnrs io simple) #:version (6))
   #:use-module ((rnrs exceptions) #:version (6))
   #:use-module ((rnrs programs) #:version (6))
-  #:export (*test-port* *test-yaml-prefix* *test-count* *test-number*
-                        *test-number-passed* *test-number-failed*
-                        *test-number-xfailed* *test-number-xpassed*
-                        *test-number-skipped*
-                        *test-group-name* *test-group-failed*
-                        test-begin test-end
-                        test-group-begin test-group-end
-                        test-group-with-cleanup
-                        test-pred
-                        test-assert test-eq test-eqv test-equal
-                        test-approximate test-error))
+  #:export (test-port test-yaml-prefix test-count test-number
+                      test-number-passed test-number-failed
+                      test-number-xfailed test-number-xpassed
+                      test-number-skipped
+                      test-group-name test-group-failed
+                      increment-test-counter
+                      test-begin test-end
+                      test-group-begin test-group-end
+                      test-group-with-cleanup
+                      test-pred
+                      test-assert test-eq test-eqv test-equal
+                      test-approximate test-error))
 
 ;;; Define SRFI-1 iota
 (define iota
@@ -150,6 +151,89 @@
 (define *test-number-skipped* 0)
 (define *test-group-name* "")
 (define *test-group-failed* #f)
+
+;;; Increments the specified counter, or int he case of
+;;; test-group-failed, sets it to #t
+(define increment-test-counter
+  (lambda (key)
+    "- Scheme Procedure: increment-test-counter key
+     Increments the counter whose name is in the string KEY. For
+     \"test-group-failed\", it is set to #t. This procedure is mostly
+     meant for internal use, but has to be exported for the test macros
+     to use on some scheme implementations."
+    (cond
+      ((string=? key "test-count") (set! *test-count* (+ 1 *test-count*)))
+      ((string=? key "test-number") (set! *test-number* (+ 1 *test-number*)))
+      ((string=? key "test-number-passed") (set! *test-number-passed* (+ 1 *test-number-passed*)))
+      ((string=? key "test-number-failed") (set! *test-number-failed* (+ 1 *test-number-failed*)))
+      ((string=? key "test-number-xfailed") (set! *test-number-xfailed* (+ 1 *test-number-xfailed*)))
+      ((string=? key "test-number-xpassed") (set! *test-number-xpassed* (+ 1 *test-number-xpassed*)))
+      ((string=? key "test-number-skipped") (set! *test-number-skipped* (+ 1 *test-number-skipped*)))
+      ((string=? key "test-group-failed") (set! *test-group-failed* #t))
+      (else (raise 'invalid-argument)))))
+
+
+(define test-port
+  (lambda ()
+    "- Scheme Procedure: test-port
+     Return the port that the test output is written to."
+    *test-port*))
+(define test-yaml-prefix
+  (lambda ()
+    "- Scheme Procedure: test-yaml-prefix
+     Return the string prefix for the yaml diagnostic block lines written
+     after FAIL, XFAIL, and XPASS tests."
+    *test-yaml-prefix*))
+(define test-count
+  (lambda ()
+    "- Scheme Procedure: test-count
+     Return the 1 based index (integer) of the current test to be done."
+    *test-count*))
+(define test-number
+  (lambda ()
+    "- Scheme Procedure: test-number
+     Return the total number (integer) of tests that are set to be
+     done, as set by the procedure test-begin."
+    *test-number*))
+(define test-number-passed
+  (lambda ()
+    "- Scheme Procedure: test-number-passed
+     Return the total number (integer) of tests that have passed so far."
+    *test-number-passed*))
+(define test-number-failed
+  (lambda ()
+    "- Scheme Procedure: test-number-failed
+     Return the total number (integer) of tests that have failed so far."
+    *test-number-failed*))
+(define test-number-xfailed
+  (lambda ()
+    "- Scheme Procedure: test-number-xfailed
+     Return the total number (integer) of tests that have xfailed so far."
+    *test-number-xfailed*))
+(define test-number-xpassed
+  (lambda ()
+    "- Scheme Procedure: test-number-xpassed
+     Return the total number (integer) of tests that have xpassed so far."
+    *test-number-xpassed*))
+(define test-number-skipped
+  (lambda ()
+    "- Scheme Procedure: test-number-skipped
+     Return the total number (integer) of tests that have been skipped
+     so far."
+    *test-number-skipped*))
+(define test-group-name
+  (lambda ()
+    "- Scheme Procedure: test-group-name
+     Return the name (string) of the currently entered group (\"\"
+     if none)."
+    *test-group-name*))
+(define test-group-failed
+  (lambda ()
+    "- Scheme Procedure: test-group-failed
+     Return whether the currently entered group has failed (one FAIL or
+     XPASS test inside it) as a boolean."
+    *test-group-failed*))
+
 
 
 ;;; Indicate the test result which is
@@ -251,11 +335,11 @@
             (xskip (cdr (assoc 'skip arg-alist)))
             (xxfail (cdr (assoc 'xfail arg-alist))))
        ;; Completely skip if in a group that has already had a failure
-       (if (or (string-null? *test-group-name*) (not *test-group-failed*))
+       (if (or (string-null? (test-group-name)) (not (test-group-failed)))
            ;; The result will be put in msg, which will be null if PASS.
            (let ((msg '())
-                 (fullname (if (string-null? *test-group-name*) xname
-                               (string-append *test-group-name* "->" xname))))
+                 (fullname (if (string-null? (test-group-name)) xname
+                               (string-append (test-group-name) "->" xname))))
              ;; Operate the test and put the output in msg if it isn't to
              ;; be skipped. If an error is caught, the test is a FAIL
              ;; and the error message must be generated.
@@ -298,28 +382,28 @@
                ;; counters incremented appropriately. If inside a group,
                ;; the group is set to failed.
                (if (or (null? msg) (and xxfail (not passed)))
-                   (if (string-null? *test-group-name*)
+                   (if (string-null? (test-group-name))
                        (begin
-                         (indicate-result *test-count* xname
+                         (indicate-result (test-count) xname
                                           passed xskip xxfail msg)
                          (cond (xxfail
-                                (set! *test-number-xfailed* (+ *test-number-xfailed* 1)))
+                                (increment-test-counter "test-number-xfailed"))
                                (xskip
-                                (set! *test-number-skipped* (+ *test-number-skipped* 1)))
+                                (increment-test-counter "test-number-skipped"))
                                (else
-                                (set! *test-number-passed* (+ *test-number-passed* 1))))))
+                                (increment-test-counter "test-number-passed")))))
                    (begin
-                     (indicate-result *test-count* fullname
+                     (indicate-result (test-count) fullname
                                       passed xskip xxfail msg)
                      (if xxfail
-                         (set! *test-number-xpassed* (+ *test-number-xpassed* 1))
-                         (set! *test-number-failed* (+ *test-number-failed* 1)))
-                     (if (not (string-null? *test-group-name*))
-                         (set! *test-group-failed* #t)))))
+                         (increment-test-counter "test-number-xpassed")
+                         (increment-test-counter "test-number-failed"))
+                     (if (not (string-null? (test-group-name)))
+                         (increment-test-counter "test-group-failed")))))
              ;; If not in a group, this test counts against the total
              ;; number.
-             (if (string-null? *test-group-name*)
-                 (set! *test-count* (+ *test-count* 1)))))))))
+             (if (string-null? (test-group-name))
+                 (increment-test-counter "test-count"))))))))
 
 
 ;;; Raw test macro for applying a predicate to one or more arguments
@@ -527,11 +611,11 @@
      (begin
        (dynamic-wind
          (lambda ()
-           (if (string-null? *test-group-name*)
+           (if (string-null? (test-group-name))
                (guard (key (#t #t)) (test-group-begin name))))
          (lambda () (guard (key (#t #t)) expr))
          (lambda () (guard (key (#t #t)) cleanup-form)))
-       (if (not (string-null? *test-group-name*))
+       (if (not (string-null? (test-group-name)))
            (test-group-end))))))
 
 
