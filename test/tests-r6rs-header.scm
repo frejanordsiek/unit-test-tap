@@ -21,7 +21,7 @@
 
 
 (import (rnrs base (6)))
-(import (only (rnrs lists (6)) for-all))
+(import (rnrs lists (6)))
 (import (prefix (rnrs exceptions (6)) excpt-))
 (import (only (rnrs io ports (6))
               call-with-string-output-port
