@@ -116,7 +116,7 @@ if test x$with_chicken = xyes ; then
   AC_MSG_NOTICE([checking for Chicken with R7RS])
   AC_PATH_PROG(CHICKEN, [chicken])
   AC_PATH_PROG(CHICKEN_CSI, [csi])
-  if test "$CHICKEN" = "" -0 "$CHICKEN_CSI" != "" ; then
+  if test "$CHICKEN" = "" -o "$CHICKEN_CSI" = "" ; then
     AC_MSG_FAILURE([could not find Chicken])
   fi
   AC_MSG_CHECKING([checking for the chicken r7rs extension])
