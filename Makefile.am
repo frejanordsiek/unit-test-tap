@@ -46,6 +46,7 @@ GUILD_FLAGS = -Wunsupported-warning -Wunbound-variable -Warity-mismatch \
 
 R6RS_TARGET = src/r6rs/unit-test-tap.scm
 R7RS_TARGET = src/r7rs/unit-test-tap.scm
+
 BUILT_SOURCES = $(R6RS_TARGET) $(R7RS_TARGET)
 
 SOURCES = src/unit-test-tap.scm
@@ -55,6 +56,13 @@ GOBJECTS = src/unit-test-tap.go
 
 # Tests
 
+R6RS_TEST_TARGET = test/tests-r6rs.scm
+R7RS_TEST_TARGET = test/tests-r7rs.scm
+R6RS_TESTSOURCES = test/tests-r6rs-header.scm test/tests-base.scm
+R7RS_TESTSOURCES = test/tests-r7rs-header.scm test/tests-base.scm
+
+check_DATA = $(R6RS_TEST_TARGET) $(R7RS_TEST_TARGET)
+
 GUILE_TESTS = test/guile.test test/guile-r6rs.test
 CHICKEN_TESTS = test/chicken-r7rs.test
 ALL_TESTS = $(GUILE_TESTS) $(CHICKEN_TESTS)
@@ -63,8 +71,6 @@ TESTS = $(GUILE_TESTS)
 if TEST_USING_CHICKEN
 TESTS += $(CHICKEN_TESTS)
 endif
-
-TEST_SOURCE = test/unit-testing.scm
 
 TEST_LOG_DRIVER = \
 	env AM_TAP_AWK='$(AWK)' \
@@ -88,10 +94,12 @@ info_TEXINFOS = doc/unit-test-tap.texi
 # Packaging and cleaning
 
 EXTRA_DIST = $(SOURCES) $(TESTSOURCES) \
+	$(R6RS_TESTSOURCES) $(R7RS_TESTSOURCES) \
 	$(STRIP_GUILE_AWK_FILE)
 
 CLEANFILES = $(GOBJECTS) $(BUILT_SOURCES) \
-	$(srcdir)/doc/unit-test-tap.info $(ALL_TESTS)
+	$(srcdir)/doc/unit-test-tap.info $(ALL_TESTS) \
+	$(R6RS_TEST_TARGET) $(R7RS_TEST_TARGET)
 MAINTAINERCLEANFILES = Makefile.in
 
 
@@ -109,19 +117,27 @@ src/r6rs/unit-test-tap.scm: $(SOURCES) src/r6rs/header.scm.in
 	$(STRIP_GUILE) $< | $(SED) -e 's/^/  /g' >> $@
 	echo '  )' >> $@
 
+# Tests - scheme files
+
+$(R6RS_TEST_TARGET): $(R6RS_TESTSOURCES)
+	cat $^ > $@
+
+$(R7RS_TEST_TARGET): $(R7RS_TESTSOURCES)
+	cat $^ > $@
+
 # Tests - shell scripts
 
-test/guile.test: $(TEST_SOURCE) src/unit-test-tap.scm
+test/guile.test: $(R6RS_TEST_TARGET) src/unit-test-tap.scm
 	echo '#!$(SHELL)' > $@
 	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src -s $<" >> $@
 	chmod +x $@
 
-test/guile-r6rs.test: $(TEST_SOURCE) src/r6rs/unit-test-tap.scm
+test/guile-r6rs.test: $(R6RS_TEST_TARGET) $(R6RS_TARGET)
 	echo '#!$(SHELL)' > $@
 	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src/r6rs -s $<" >> $@
 	chmod +x $@
 
-test/chicken-r7rs.test: src/r7rs/unit-test-tap.scm $(TEST_SOURCE)
+test/chicken-r7rs.test: $(R7RS_TARGET) $(R7RS_TEST_TARGET)
 	echo '#!$(SHELL)' > $@
 	echo "$(CHICKEN_CSI) -R r7rs -b -w -q $^" >> $@
 	chmod +x $@

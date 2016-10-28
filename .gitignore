@@ -31,4 +31,6 @@ doc/version.texi
 *.info
 src/r6rs/unit-test-tap.scm
 src/r7rs/unit-test-tap.scm
+test/tests-r6rs.scm
+test/tests-r7rs.scm
 

@@ -1,4 +1,4 @@
-;;; unit-testing.scm --- test the unit-test-tap module
+;;; tests-base.scm --- test the unit-test-tap module
 ;;; coding: utf-8
 
 ;;; unit-test-tap - scheme unit testing framework with TAP output
@@ -25,55 +25,6 @@
 ;;; string ports to be evaluated for correctness.
 
 (import (unit-test-tap))
-
-(cond-expand ((or r6rs guile-2 guile)
-              (import (rnrs base (6)))
-              (import (only (rnrs lists (6)) for-all))
-              (import (prefix (rnrs exceptions (6)) excpt-))
-              (import (only (rnrs io ports (6))
-                            call-with-string-output-port
-                            open-string-output-port))
-              (import (rnrs io simple (6))))
-             (r7rs
-              (import (except (scheme base) guard raise))
-              (import (prefix (only (scheme base) guard raise) excpt-))
-              (import (scheme write))
-              ;; Short utility procedure to check if a string is 0 length.
-              (define string-null?
-                (lambda (s) (= 0 (string-length s))))
-              ;; Make the R6RS call-with-string-output-port and
-              ;; open-string-output-port in terms of R7RS
-              ;; open-output-string and get-output-string.
-              (define open-string-output-port
-                (lambda ()
-                  (let ((p (open-output-string)))
-                    (values p (lambda () (get-output-string p))))))
-              (define call-with-string-output-port
-                (lambda (proc)
-                  (let ((p (open-output-string)))
-                    (proc p)
-                    (let ((out-s (get-output-string p)))
-                      (close-port p)
-                      out-s))))
-              ;; Make R6RS cons*
-              (define-syntax cons*
-                (syntax-rules ()
-                  ((cons*) '())
-                  ((cons* arg0) arg0)
-                  ((cons* arg0 arg1 . args) (cons arg0 (cons* arg1 . args)))))
-              ;; Make R6RS for-all
-              (define-syntax for-all
-                (syntax-rules ()
-                  ((for-all proc . args)
-                   (call-with-current-continuation
-                    (lambda (return)
-                      (map (lambda ( arg0 . other-args)
-                             (if (if (= 0 (length other-args))
-                                     (proc arg0)
-                                     (apply proc (append (list arg0) other-args)))
-                                 #t
-                                 (return #f))) . args)
-                      (return #t))))))))
 
 
 ;;; Define SRFI-1 iota for implementations that won't have it in the default
