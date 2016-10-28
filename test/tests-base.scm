@@ -82,9 +82,9 @@
 ;;; xpassed, and skipped and puts them in one list.
 (define get-test-counts
   (lambda ()
-    (list *test-number-passed* *test-number-failed*
-          *test-number-xfailed* *test-number-xpassed*
-          *test-number-skipped*)))
+    (list (test-number-passed) (test-number-failed)
+          (test-number-xfailed) (test-number-xpassed)
+          (test-number-skipped))))
 
 ;;; Make a function that checks the number of passed, failed, xfailed,
 ;;; xpassed, and skipped.
@@ -93,7 +93,7 @@
     (let ((t-counts (list passed failed xfailed xpassed skipped)))
       (and
        (for-all = (get-test-counts) t-counts)
-       (= (+ 1 (apply + t-counts)) *test-count*)))))
+       (= (+ 1 (apply + t-counts)) (test-count))))))
 
 
 ;;; Output the header
@@ -124,12 +124,12 @@
                             (set! pass
                               (and (string=? (TAP-header n)
                                              (get-output))
-                                   (eq? p *test-port*)
-                                   (string=? prefix *test-yaml-prefix*)
-                                   (= n *test-number*)
+                                   (eq? p (test-port))
+                                   (string=? prefix (test-yaml-prefix))
+                                   (= n (test-number))
                                    (check-test-counts 0 0 0 0 0)
-                                   (string-null? *test-group-name*)
-                                   (not *test-group-failed*)))
+                                   (string-null? (test-group-name))
+                                   (not (test-group-failed))))
                             (close-port p))
                           pass))
                       (map (lambda (x) (+ 1 x)) (iota number))
@@ -632,10 +632,10 @@
                                     (test-group-begin group-name)
                                     (set! group-success
                                       (string=? group-name
-                                                *test-group-name*))
+                                                (test-group-name)))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (not *test-group-failed*)
+                          (not (test-group-failed))
                           (check-test-counts 1 0 0 0 0)))))
 
 ;;; Enter and leave group with two passed tests
@@ -656,10 +656,10 @@
                                     (test-assert #t name)
                                     (set! group-success
                                       (string=? group-name
-                                                *test-group-name*))
+                                                (test-group-name)))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (not *test-group-failed*)
+                          (not (test-group-failed))
                           (check-test-counts 1 0 0 0 0)))))
 
 ;;; Enter and leave group with two tests (XFAIL PASS)
@@ -680,10 +680,10 @@
                                     (test-assert #t name)
                                     (set! group-success
                                       (string=? group-name
-                                                *test-group-name*))
+                                                (test-group-name)))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (not *test-group-failed*)
+                          (not (test-group-failed))
                           (check-test-counts 1 0 0 0 0)))))
 
 ;;; Enter and leave group with two tests (FAIL PASS)
@@ -714,10 +714,10 @@
                                     (test-assert #t name)
                                     (set! group-success
                                       (string=? group-name
-                                                *test-group-name*))
+                                                (test-group-name)))
                                     (test-group-end)))))
                      (and output-same group-success
-                          *test-group-failed*
+                          (test-group-failed)
                           (check-test-counts 0 1 0 0 0)))))
 
 ;;; Enter and leave group with two tests (XPASS PASS)
@@ -747,10 +747,10 @@
                                     (test-assert #t name)
                                     (set! group-success
                                       (string=? group-name
-                                                *test-group-name*))
+                                                (test-group-name)))
                                     (test-group-end)))))
                      (and output-same group-success
-                          *test-group-failed*
+                          (test-group-failed)
                           (check-test-counts 0 0 0 1 0)))))
 
 ;;; Double begin group
@@ -795,7 +795,7 @@
                             (set! finished #t))
                           (set! cleaned-up #t))))
                      (and finished cleaned-up
-                          (string-null? *test-group-name*)))))
+                          (string-null? (test-group-name))))))
 
 ;;; test-group-with-cleanup error in body
 (display (response (get-count)
@@ -813,4 +813,4 @@
                             (set! finished #t))
                           (set! cleaned-up #t))))
                      (and (not finished) cleaned-up
-                          (string-null? *test-group-name*)))))
+                          (string-null? (test-group-name))))))

@@ -20,11 +20,12 @@
 ;;; Boston, MA  02110-1301  USA
 
 (define-library (unit-test-tap)
-  (export *test-port* *test-yaml-prefix* *test-count* *test-number*
-          *test-number-passed* *test-number-failed*
-          *test-number-xfailed* *test-number-xpassed*
-          *test-number-skipped*
-          *test-group-name* *test-group-failed*
+  (export test-port test-yaml-prefix test-count test-number
+          test-number-passed test-number-failed
+          test-number-xfailed test-number-xpassed
+          test-number-skipped
+          test-group-name test-group-failed
+          increment-test-counter
           test-begin test-end
           test-group-begin test-group-end
           test-group-with-cleanup
