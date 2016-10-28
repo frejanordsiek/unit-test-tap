@@ -79,9 +79,9 @@
 ;;; xpassed, and skipped and puts them in one list.
 (define get-test-counts
   (lambda ()
-    (list (test-number-passed) (test-number-failed)
-          (test-number-xfailed) (test-number-xpassed)
-          (test-number-skipped))))
+    (list *test-number-passed* *test-number-failed*
+          *test-number-xfailed* *test-number-xpassed*
+          *test-number-skipped*)))
 
 ;;; Make a function that checks the number of passed, failed, xfailed,
 ;;; xpassed, and skipped.
@@ -90,7 +90,7 @@
     (let ((t-counts (list passed failed xfailed xpassed skipped)))
       (and
        (for-all = (get-test-counts) t-counts)
-       (= (+ 1 (apply + t-counts)) (test-count))))))
+       (= (+ 1 (apply + t-counts)) *test-count*)))))
 
 
 ;;; Output the header
@@ -119,14 +119,14 @@
                                         (open-string-output-port)))
                             (test-begin n 'port p 'yaml-prefix prefix)
                             (set! pass
-                              (and (string= (TAP-header n)
-                                            (get-output))
-                                   (eq? p (test-port))
-                                   (string= prefix (test-yaml-prefix))
-                                   (= n (test-number))
+                              (and (string=? (TAP-header n)
+                                             (get-output))
+                                   (eq? p *test-port*)
+                                   (string=? prefix *test-yaml-prefix*)
+                                   (= n *test-number*)
                                    (check-test-counts 0 0 0 0 0)
-                                   (string-null? (test-group-name))
-                                   (not (test-group-failed))))
+                                   (string-null? *test-group-name*)
+                                   (not *test-group-failed*)))
                             (close-port p))
                           pass))
                       (map (lambda (x) (+ 1 x)) (iota number))
@@ -620,19 +620,19 @@
                          (group-success #f)
                          (output-same #t))
                      (set! output-same
-                       (string= (string-append (TAP-header 1)
-                                               "ok 1 - " group-name
-                                               newline-char)
-                                (call-with-string-output-port
+                       (string=? (string-append (TAP-header 1)
+                                                "ok 1 - " group-name
+                                                newline-char)
+                                 (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (set! group-success
-                                      (string= group-name
-                                               (test-group-name)))
+                                      (string=? group-name
+                                                *test-group-name*))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (not (test-group-failed))
+                          (not *test-group-failed*)
                           (check-test-counts 1 0 0 0 0)))))
 
 ;;; Enter and leave group with two passed tests
@@ -642,21 +642,21 @@
                          (group-success #f)
                          (output-same #t))
                      (set! output-same
-                       (string= (string-append (TAP-header 1)
-                                               "ok 1 - " group-name
-                                               newline-char)
-                                (call-with-string-output-port
+                       (string=? (string-append (TAP-header 1)
+                                                "ok 1 - " group-name
+                                                newline-char)
+                                 (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (test-assert #t name)
                                     (test-assert #t name)
                                     (set! group-success
-                                      (string= group-name
-                                               (test-group-name)))
+                                      (string=? group-name
+                                                *test-group-name*))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (not (test-group-failed))
+                          (not *test-group-failed*)
                           (check-test-counts 1 0 0 0 0)))))
 
 ;;; Enter and leave group with two tests (XFAIL PASS)
@@ -666,21 +666,21 @@
                          (group-success #f)
                          (output-same #t))
                      (set! output-same
-                       (string= (string-append (TAP-header 1)
-                                               "ok 1 - " group-name
-                                               newline-char)
-                                (call-with-string-output-port
+                       (string=? (string-append (TAP-header 1)
+                                                "ok 1 - " group-name
+                                                newline-char)
+                                 (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (test-assert #f name 'xfail #t)
                                     (test-assert #t name)
                                     (set! group-success
-                                      (string= group-name
-                                               (test-group-name)))
+                                      (string=? group-name
+                                                *test-group-name*))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (not (test-group-failed))
+                          (not *test-group-failed*)
                           (check-test-counts 1 0 0 0 0)))))
 
 ;;; Enter and leave group with two tests (FAIL PASS)
@@ -690,31 +690,31 @@
                          (group-success #f)
                          (output-same #t))
                      (set! output-same
-                       (string= (string-append (TAP-header 1)
-                                               "not ok 1 - " group-name
-                                               "->" name
-                                               newline-char
-                                               "  ---" newline-char
-                                               "  message: Arguments did "
-                                               "not evaluate #t"
-                                               newline-char
-                                               "  got: " newline-char
-                                               "    expr0: #f" newline-char
-                                               "  evaluated: " newline-char
-                                               "    arg0: #f" newline-char
-                                               "  ..." newline-char)
-                                (call-with-string-output-port
+                       (string=? (string-append (TAP-header 1)
+                                                "not ok 1 - " group-name
+                                                "->" name
+                                                newline-char
+                                                "  ---" newline-char
+                                                "  message: Arguments did "
+                                                "not evaluate #t"
+                                                newline-char
+                                                "  got: " newline-char
+                                                "    expr0: #f" newline-char
+                                                "  evaluated: " newline-char
+                                                "    arg0: #f" newline-char
+                                                "  ..." newline-char)
+                                 (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (test-assert #f name)
                                     (test-assert #t name)
                                     (set! group-success
-                                      (string= group-name
-                                               (test-group-name)))
+                                      (string=? group-name
+                                                *test-group-name*))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (test-group-failed)
+                          *test-group-failed*
                           (check-test-counts 0 1 0 0 0)))))
 
 ;;; Enter and leave group with two tests (XPASS PASS)
@@ -724,30 +724,30 @@
                          (group-success #f)
                          (output-same #t))
                      (set! output-same
-                       (string= (string-append (TAP-header 1)
-                                               "ok 1 - " group-name
-                                               "->" name
-                                               " # TODO"
-                                               newline-char
-                                               "  ---" newline-char
-                                               "  message: Expected to "
-                                               "fail but didn't"
-                                               newline-char
-                                               "  got: " newline-char
-                                               "    expr0: #t" newline-char
-                                               "  ..." newline-char)
-                                (call-with-string-output-port
+                       (string=? (string-append (TAP-header 1)
+                                                "ok 1 - " group-name
+                                                "->" name
+                                                " # TODO"
+                                                newline-char
+                                                "  ---" newline-char
+                                                "  message: Expected to "
+                                                "fail but didn't"
+                                                newline-char
+                                                "  got: " newline-char
+                                                "    expr0: #t" newline-char
+                                                "  ..." newline-char)
+                                 (call-with-string-output-port
                                   (lambda (p)
                                     (test-begin 1 'port p)
                                     (test-group-begin group-name)
                                     (test-assert #t name 'xfail #t)
                                     (test-assert #t name)
                                     (set! group-success
-                                      (string= group-name
-                                               (test-group-name)))
+                                      (string=? group-name
+                                                *test-group-name*))
                                     (test-group-end)))))
                      (and output-same group-success
-                          (test-group-failed)
+                          *test-group-failed*
                           (check-test-counts 0 0 0 1 0)))))
 
 ;;; Double begin group
@@ -783,16 +783,16 @@
                    (let ((finished #f)
                          (cleaned-up #f))
                      (call-with-string-output-port
-                       (lambda (p)
-                         (test-begin 1 'port p)
-                         (test-group-with-cleanup "avu3n"
-                           (begin
-                             (test-assert #t)
-                             (test-assert #f)
-                             (set! finished #t))
-                           (set! cleaned-up #t))))
+                      (lambda (p)
+                        (test-begin 1 'port p)
+                        (test-group-with-cleanup "avu3n"
+                          (begin
+                            (test-assert #t)
+                            (test-assert #f)
+                            (set! finished #t))
+                          (set! cleaned-up #t))))
                      (and finished cleaned-up
-                          (string-null? (test-group-name))))))
+                          (string-null? *test-group-name*)))))
 
 ;;; test-group-with-cleanup error in body
 (display (response (get-count)
@@ -800,14 +800,14 @@
                    (let ((finished #f)
                          (cleaned-up #f))
                      (call-with-string-output-port
-                       (lambda (p)
-                         (test-begin 1 'port p)
-                         (test-group-with-cleanup "avu3n"
-                           (begin
-                             (test-assert #t)
-                             (test-assert #f)
-                             (excpt-raise 'ae)
-                             (set! finished #t))
-                           (set! cleaned-up #t))))
+                      (lambda (p)
+                        (test-begin 1 'port p)
+                        (test-group-with-cleanup "avu3n"
+                          (begin
+                            (test-assert #t)
+                            (test-assert #f)
+                            (excpt-raise 'ae)
+                            (set! finished #t))
+                          (set! cleaned-up #t))))
                      (and (not finished) cleaned-up
-                          (string-null? (test-group-name))))))
+                          (string-null? *test-group-name*)))))
