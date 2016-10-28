@@ -74,8 +74,8 @@
           (loop (- m 1) (cons m lst))))))
 
 ;; Short utility procedure to check if a string is 0 length.
-    (define string-null?
-      (lambda (s) (= 0 (string-length s))))
+(define string-null?
+  (lambda (s) (= 0 (string-length s))))
 
 ;;; Returns the given alist but with the entry for obj removed. The order of
 ;;; the other entries is reversed.

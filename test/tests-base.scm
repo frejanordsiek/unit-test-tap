@@ -26,6 +26,9 @@
 
 (import (unit-test-tap))
 
+;; Short utility procedure to check if a string is 0 length.
+(define string-null?
+  (lambda (s) (= 0 (string-length s))))
 
 ;;; Define SRFI-1 iota for implementations that won't have it in the default
 ;;; environment
@@ -42,9 +45,9 @@
   (syntax-rules ()
     ((my-format fmt obj)
      (call-with-string-output-port
-       (lambda (p) (if (string= fmt "~a")
-                       (display obj p)
-                       (write obj p)))))))
+      (lambda (p) (if (string=? fmt "~a")
+                      (display obj p)
+                      (write obj p)))))))
 
 ;;; Get the newline character
 (define newline-char (call-with-string-output-port newline))
@@ -100,8 +103,8 @@
 ;;; Test the TAP headers
 (display (response (get-count) "header"
                    (for-all (lambda (n)
-                              (string= (TAP-header n)
-                                       (call-with-string-output-port
+                              (string=? (TAP-header n)
+                                        (call-with-string-output-port
                                          (lambda (p)
                                            (test-begin n 'port p)))))
                             (map (lambda (x) (+ 1 x))
@@ -165,10 +168,10 @@
                  ;; Grab the first items and do the assertion. Then generate
                  ;; what the output should be, check the output, and check
                  ;; the counts for each kind of test.
-                 (let* ((x (if (string= state "EVAL EXCEPTION")
+                 (let* ((x (if (string=? state "EVAL EXCEPTION")
                                '(excpt-raise 'aive)
                                (car items0)))
-                        (y (if (string= state "EVAL EXCEPTION")
+                        (y (if (string=? state "EVAL EXCEPTION")
                                '(excpt-raise 'aive)
                                (car items1)))
                         (new-total (+ total count))
@@ -184,7 +187,7 @@
                                         prefix "  got: " newline-char
                                         prefix "    expr0: x"
                                         newline-char
-                                        (if (string= which "assert")
+                                        (if (string=? which "assert")
                                             ""
                                             (string-append
                                              prefix "    expr1: y"
@@ -196,7 +199,7 @@
                                         prefix "    arg0: "
                                         (my-format "~a" x)
                                         newline-char
-                                        (if (string= which "assert")
+                                        (if (string=? which "assert")
                                             ""
                                             (string-append
                                              prefix "    arg1: "
@@ -204,37 +207,37 @@
                                              newline-char))))
                         ;; Generate what failure messages will say was
                         ;; not evaluated (#t, which, or approx message).
-                        (eval-to (cond ((string= which "assert") "#t")
-                                       ((string= which "approximate")
+                        (eval-to (cond ((string=? which "assert") "#t")
+                                       ((string=? which "approximate")
                                         (string-append
                                          "approximately equal (within "
                                          (number->string tol)
                                          " of each other)"))
                                        (else which)))
-                        (skip (string= state "SKIP"))
-                        (xfail (or (string= state "XFAIL")
-                                   (string= state "XPASS"))))
-                   (cond ((string= which "assert")
+                        (skip (string=? state "SKIP"))
+                        (xfail (or (string=? state "XFAIL")
+                                   (string=? state "XPASS"))))
+                   (cond ((string=? which "assert")
                           (test-assert x name 'skip skip 'xfail xfail))
-                         ((string= which "eq?")
+                         ((string=? which "eq?")
                           (test-eq x y name 'skip skip 'xfail xfail))
-                         ((string= which "eqv?")
+                         ((string=? which "eqv?")
                           (test-eqv x y name 'skip skip 'xfail xfail))
-                         ((string= which "equal?")
+                         ((string=? which "equal?")
                           (test-equal x y name 'skip skip 'xfail xfail))
                          (else (test-approximate x y tol name
                                                  'skip skip 'xfail xfail)))
                    ;; Append the output for the respective state.
                    (set! output
-                     (cond ((string= state "PASS")
+                     (cond ((string=? state "PASS")
                             (string-append output "ok "
                                            (number->string new-total)
                                            " - " name newline-char))
-                           ((string= state "SKIP")
+                           ((string=? state "SKIP")
                             (string-append output "ok "
                                            (number->string new-total)
                                            " - " name " # SKIP" newline-char))
-                           ((string= state "FAIL")
+                           ((string=? state "FAIL")
                             (string-append output "not ok "
                                            (number->string new-total)
                                            " - " name newline-char
@@ -244,7 +247,7 @@
                                            eval-to
                                            got-eval-lines
                                            prefix "  ..." newline-char))
-                           ((string= state "XFAIL")
+                           ((string=? state "XFAIL")
                             (string-append output "not ok "
                                            (number->string new-total)
                                            " - " name " # TODO" newline-char
@@ -254,7 +257,7 @@
                                            eval-to
                                            got-eval-lines
                                            prefix "  ..." newline-char))
-                           ((string= state "XPASS")
+                           ((string=? state "XPASS")
                             (string-append output "ok "
                                            (number->string new-total)
                                            " - " name " # TODO" newline-char
@@ -276,7 +279,7 @@
                                            prefix "  ..." newline-char))))
                    ;; Compare output and return diagnostic information
                    ;; if it fails
-                   (cond ((not (string= output (get-output)))
+                   (cond ((not (string=? output (get-output)))
                           (begin
                             (set! msg (list
                                        (string-append "  FAILED "
@@ -319,7 +322,7 @@
 (define-syntax check-asserts
   (syntax-rules ()
     ((check-asserts which tol pexprs0 pexprs1 fexprs0 fexprs1)
-     (if (string= which "assert")
+     (if (string=? which "assert")
          (begin
            (check-asserts-state which "PASS" "Vviene3" "#v" tol
                                 pexprs0 pexprs0)
@@ -330,8 +333,8 @@
            (check-asserts-state which "XPASS" "vneAva7$" "E" tol
                                 pexprs0 pexprs1)
            (check-asserts-state which "SKIP" "vu A" "VA" tol
-                                    (list (list . pexprs0) . fexprs0)
-                                    (list (list . pexprs0) . fexprs0))
+                                (list (list . pexprs0) . fexprs0)
+                                (list (list . pexprs0) . fexprs0))
            (check-asserts-state which "EVAL EXCEPTION" "38va[" "()" tol
                                 pexprs0 pexprs1))
          (begin
@@ -413,18 +416,18 @@
 
 ;;; 0 args
 (display (response (get-count) "test-pred 0 args"
-                   (string= (string-append (TAP-header 1)
-                                           "ok 1" newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "ok 1" newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-pred ((lambda () #t))))))))
 
 ;;; 3 args
 (display (response (get-count) "test-pred 3 args"
-                   (string= (string-append (TAP-header 1)
-                                           "ok 1" newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "ok 1" newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-pred ((lambda (arg0 arg1 arg2)
@@ -433,9 +436,9 @@
 
 ;;; 6 args
 (display (response (get-count) "test-pred 6 args"
-                   (string= (string-append (TAP-header 1)
-                                           "ok 1" newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "ok 1" newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-pred ((lambda (arg0 arg1 arg2 arg3 arg4 arg5)
@@ -444,21 +447,21 @@
 
 ;;; Eval exception
 (display (response (get-count) "test-pred EVAL EXCEPTION"
-                   (string= (string-append (TAP-header 1)
-                                           "not ok 1" newline-char
-                                           "  ---" newline-char
-                                           "  message: Error thrown "
-                                           "evaluating expressions"
-                                           newline-char
-                                           "  error: blah" newline-char
-                                           "  got: " newline-char
-                                           "    expr0: 1" newline-char
-                                           "    expr1: 2" newline-char
-                                           "    expr2: 3" newline-char
-                                           "    expr3: (excpt-raise (quote blah))"
-                                           newline-char
-                                           "  ..." newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "not ok 1" newline-char
+                                            "  ---" newline-char
+                                            "  message: Error thrown "
+                                            "evaluating expressions"
+                                            newline-char
+                                            "  error: blah" newline-char
+                                            "  got: " newline-char
+                                            "    expr0: 1" newline-char
+                                            "    expr1: 2" newline-char
+                                            "    expr2: 3" newline-char
+                                            "    expr3: (excpt-raise (quote blah))"
+                                            newline-char
+                                            "  ..." newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-pred ((lambda (arg0 arg1 arg2 arg3)
@@ -467,20 +470,20 @@
 
 ;;; Predicate exception
 (display (response (get-count) "test-pred PRED EXCEPTION"
-                   (string= (string-append (TAP-header 1)
-                                           "not ok 1" newline-char
-                                           "  ---" newline-char
-                                           "  message: Error thrown "
-                                           "applying excpt-raise"
-                                           newline-char
-                                           "  error: en" newline-char
-                                           "  got: " newline-char
-                                           "    expr0: (quote en)"
-                                           newline-char
-                                           "  evaluated: " newline-char
-                                           "    arg0: en" newline-char
-                                           "  ..." newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "not ok 1" newline-char
+                                            "  ---" newline-char
+                                            "  message: Error thrown "
+                                            "applying excpt-raise"
+                                            newline-char
+                                            "  error: en" newline-char
+                                            "  got: " newline-char
+                                            "    expr0: (quote en)"
+                                            newline-char
+                                            "  evaluated: " newline-char
+                                            "    arg0: en" newline-char
+                                            "  ..." newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-pred (excpt-raise 'en)))))))
@@ -490,73 +493,73 @@
 
 ;;; Catch an error when catching all errors (PASS)
 (display (response (get-count) "test-error catch all PASS"
-                   (string= (string-append (TAP-header 1)
-                                           "ok 1" newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "ok 1" newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 "a")))))))
 
 ;;; Catch no error when catching all errors (FAIL)
 (display (response (get-count) "test-error catch all FAIL"
-                   (string= (string-append (TAP-header 1)
-                                           "not ok 1" newline-char
-                                           "  ---" newline-char
-                                           "  message: "
-                                           "Exception was not thrown"
-                                           newline-char
-                                           "  error: #t" newline-char
-                                           "  got: " newline-char
-                                           "    expr0: (+ 1 2)"
-                                           newline-char
-                                           "  ..." newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "not ok 1" newline-char
+                                            "  ---" newline-char
+                                            "  message: "
+                                            "Exception was not thrown"
+                                            newline-char
+                                            "  error: #t" newline-char
+                                            "  got: " newline-char
+                                            "    expr0: (+ 1 2)"
+                                            newline-char
+                                            "  ..." newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 2)))))))
 
 ;;; Catch no error when catching all errors (XFAIL)
 (display (response (get-count) "test-error catch all XFAIL"
-                   (string= (string-append (TAP-header 1)
-                                           "not ok 1 # TODO"
-                                           newline-char
-                                           "  ---" newline-char
-                                           "  message: "
-                                           "Exception was not thrown"
-                                           newline-char
-                                           "  error: #t" newline-char
-                                           "  got: " newline-char
-                                           "    expr0: (+ 1 2)"
-                                           newline-char
-                                           "  ..." newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "not ok 1 # TODO"
+                                            newline-char
+                                            "  ---" newline-char
+                                            "  message: "
+                                            "Exception was not thrown"
+                                            newline-char
+                                            "  error: #t" newline-char
+                                            "  got: " newline-char
+                                            "    expr0: (+ 1 2)"
+                                            newline-char
+                                            "  ..." newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 2) 'xfail #t))))))
 
 ;;; Catch an error when catching all errors (XPASS)
 (display (response (get-count) "test-error catch all XPASS"
-                   (string= (string-append (TAP-header 1)
-                                           "ok 1 # TODO"
-                                           newline-char
-                                           "  ---" newline-char
-                                           "  message: "
-                                           "Expected to fail but didn't"
-                                           newline-char
-                                           "  got: " newline-char
-                                           "    expr0: (+ 1 a)"
-                                           newline-char
-                                           "  ..." newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "ok 1 # TODO"
+                                            newline-char
+                                            "  ---" newline-char
+                                            "  message: "
+                                            "Expected to fail but didn't"
+                                            newline-char
+                                            "  got: " newline-char
+                                            "    expr0: (+ 1 a)"
+                                            newline-char
+                                            "  ..." newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 "a") 'xfail #t))))))
 
 ;;; Skip catch no error when catching all errors (SKIP)
 (display (response (get-count) "test-error catch all SKIP"
-                   (string= (string-append (TAP-header 1)
-                                           "ok 1 # SKIP" newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "ok 1 # SKIP" newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 2) 'skip #t))))))
@@ -564,48 +567,48 @@
 
 ;;; Catch a specific error (PASS)
 (display (response (get-count) "test-error specific error PASS"
-                   (string= (string-append (TAP-header 1)
-                                           "ok 1" newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "ok 1" newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error 'ab (excpt-raise 'ab)))))))
 
 ;;; Fail to catch anything while trying to catch a specific error (FAIL)
 (display (response (get-count) "test-error specific error none thrown FAIL"
-                   (string= (string-append (TAP-header 1)
-                                           "not ok 1" newline-char
-                                           "  ---" newline-char
-                                           "  message: "
-                                           "Exception was not thrown"
-                                           newline-char
-                                           "  error: ab" newline-char
-                                           "  got: " newline-char
-                                           "    expr0: (+ 1 2)"
-                                           newline-char
-                                           "  ..." newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "not ok 1" newline-char
+                                            "  ---" newline-char
+                                            "  message: "
+                                            "Exception was not thrown"
+                                            newline-char
+                                            "  error: ab" newline-char
+                                            "  got: " newline-char
+                                            "    expr0: (+ 1 2)"
+                                            newline-char
+                                            "  ..." newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error 'ab (+ 1 2)))))))
 
 ;;; Catch wrong error while trying to catch a specific error (FAIL)
 (display (response (get-count) "test-error specific error wrong thrown FAIL"
-                   (string= (string-append (TAP-header 1)
-                                           "not ok 1" newline-char
-                                           "  ---" newline-char
-                                           "  message: "
-                                           "Wrong exception was thrown"
-                                           newline-char
-                                           "  error: " newline-char
-                                           "    got: ef" newline-char
-                                           "    expected: ab" newline-char
-                                           "  got: " newline-char
-                                           "    expr0: "
-                                           "(excpt-raise (quote ef))"
-                                           newline-char
-                                           "  ..." newline-char)
-                            (call-with-string-output-port
+                   (string=? (string-append (TAP-header 1)
+                                            "not ok 1" newline-char
+                                            "  ---" newline-char
+                                            "  message: "
+                                            "Wrong exception was thrown"
+                                            newline-char
+                                            "  error: " newline-char
+                                            "    got: ef" newline-char
+                                            "    expected: ab" newline-char
+                                            "  got: " newline-char
+                                            "    expr0: "
+                                            "(excpt-raise (quote ef))"
+                                            newline-char
+                                            "  ..." newline-char)
+                             (call-with-string-output-port
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error 'ab (excpt-raise 'ef)))))))

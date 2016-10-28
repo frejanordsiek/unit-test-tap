@@ -24,10 +24,6 @@
 (import (prefix (only (scheme base) guard raise) excpt-))
 (import (scheme write))
 
-;; Short utility procedure to check if a string is 0 length.
-(define string-null?
-  (lambda (s) (= 0 (string-length s))))
-
 ;; Make the R6RS call-with-string-output-port and
 ;; open-string-output-port in terms of R7RS
 ;; open-output-string and get-output-string.
