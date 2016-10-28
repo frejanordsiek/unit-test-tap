@@ -95,9 +95,12 @@ definition compared to other programming languages,
 though @acronym{R@sup{6}RS, Revised@sup{6} Reports on Scheme} does
 venture into the medium size territory.
 
-The library targets ones specific Guile implementation -
-@uref{https://www.gnu.org/software/guile/, Guile} starting with version
-2.0.
+The library targets the two most recent Scheme standards as of October
+2016, R@sup{6}RS and R@sup{7}RS-small.
+
+A specific version is also provided for the
+@uref{https://www.gnu.org/software/guile/, Guile} implementation
+starting with version 2.0.
 @acronym{Guile, GNU’s Ubiquitous Intelligent Language for Extensions} is
 a popular Scheme implementation for extending programs and libraries
 (especially those from GNU), is the language that
@@ -105,6 +108,10 @@ a popular Scheme implementation for extending programs and libraries
 which is in turn used for the
 @uref{https://www.gnu.org/software/guix/,GuixSD} GNU/Linux distribution,
 and is also seeing a growing number of standalone programs.
+
+The package provides unit tests for this library for Guile (both Guile
+and R@sup{6}RS versions) and @uref{http://call-cc.org/, Chicken}
+(R@sup{7}RS version with the help of the @code{r7rs} extension).
 
 @menu
 * License::
@@ -131,31 +138,43 @@ This manual is copyrighted and licensed under the
 @node Installation
 @section Installation
 
-The library is entirely contained in @file{src/unit-tap-test.scm}. It is
-possible to just copy the file to where ever it is needed; such as into
-Guile's site directory, which can be found by running @code{(%site-dir)}
-at the REPL. On GNU/Linux, it will usually be something like
-@file{/usr/share/guile/site/X.Y} where @code{X.Y} is the effective
-version of Guile.
+The R@sup{6}RS and R@sup{7}RS-small versions have to be built from the
+Guile specific version. After being built, they are found at
+@file{src/r6rs/unit-test-tap.scm} and
+@file{src/r7rs/unit-test-tap.scm}.
 
-However, a @file{configure} script is provided that will produce a
-@file{Makefile} that can be used to compile the library to Guile's
+The Guile version of the library is entirely contained in
+@file{src/unit-tap-test.scm}. It is possible to just copy the file to
+where ever it is needed; such as into Guile's site directory, which can
+be found by running @code{(%site-dir)} at the REPL. On GNU/Linux, it
+will usually be something like @file{/usr/share/guile/site/X.Y} where
+@code{X.Y} is the effective version of Guile. Though, using the provided
+@file{configure} script and @command{make} will allow this to be done in
+a more automated fashion as well as compile to Guile's bytecode
+format (go files).
+
+A @file{configure} script is provided that will produce a
+@file{Makefile} that can be used to build the R@sup{6}RS and
+R@sup{7}RS-small versions of the library, compile the library to Guile's
 bytecode format (go files), install the library into Guile's site
 directories for Scheme files and go files, build the documentation, and
-run unit tests on the library. The package is configured using the
-@file{configure} script, which takes user input to tune the build, finds
-Guile and where Guile wants Scheme and go files to be installed, and
-checks that the required Scheme libraries/modules are available. Inside
+run unit tests on the library in both Guile and Chicken. The package is
+configured using the @file{configure} script, which takes user input to
+tune the build, finds and checks Guile (where Guile wants Scheme and go
+files to be installed and that the required libraries are available),
+and finds and checks Chicken for use in testing (default is yes). Inside
 the package directory, run
 
 @example
 ./configure [--prefix=DIR] [--enable-compile-scm=yes/no] [--with-guile=X.Y]
+    [--enable-test-chicken=yes/no]
 @end example
 
 where optional parameters can be used to set the base directory (prefix)
 for installing the documentation, whether to compile to Guile's bytecode
-format (default is yes), and which Guile effective version to target and
-look for (default is 2.2, followed by 2.0 if 2.2 cannot be found).
+format (default is yes), which Guile effective version to target and
+look for (default is 2.2, followed by 2.0 if 2.2 cannot be found), and
+whether to do unit tests using Chicken in addition to Guile.
 
 Now that the @file{Makefile} has been made, one runs
 
@@ -165,7 +184,8 @@ make
 
 to build the documentation in info format and compile the library to
 Guile's bytecode depending on whether that was enabled or
-not. The library can be checked by running unit tests on it by running
+not. The library can be checked by running unit tests on it (using Guile
+and optionally Chicken) by running
 
 @example
 make check
@@ -181,7 +201,7 @@ HTML documentation can be built using @code{make html} and installed by
 @code{make install-html}.
 
 If you grab unit-test-tap from its source code repository,
-@file{configure} and @file{Makefile} will not be present yet. You need
+@file{configure} will not be present yet. You need
 @uref{https://www.gnu.org/software/autoconf/autoconf.html,Autoconf} and
 @uref{https://www.gnu.org/software/automake,Automake} in order to
 generate them. They are generated by running the command
@@ -190,24 +210,20 @@ generate them. They are generated by running the command
 @node Portability
 @section Portability
 
-Scheme implementations are generally not very compatible with each
-other, each one providing many extensions on top of a couple different
-minimal Scheme language specifications which are not completely
-compatible with each other. Though, there are a few standardized
-extensions, known as the
-@acronym{SRFI, Scheme Requests for Implementation}.
+unit-tap-test is provided for Scheme standards
+@uref{http://www.r6rs.org, R@sup{6}RS} and
+@uref{http://trac.sacrideo.us/wg/wiki/R7RSHomePage, R@sup{7}RS-small},
+and for the Guile implementation specifically (Guile version uses a few
+extenstions). The Guile version is not portable to other
+implementations, while the R@sup{6}RS and R@sup{7}RS-small versions are
+portable to implementations that implement those standards.
 
-unit-tap-test mostly conforms to @uref{http://www.r6rs.org, R@sup{6}RS},
-but additionally uses
-@uref{http://srfi.schemers.org/srfi-6/srfi-6.html,SRFI-6} and a few
-Guile specific extensions. The Guile specific extensions that are used
-are Guile's @code{lambda*} way of providing optional and keyword
-arguments for procedures, Guile's way of declaring libraries/modules,
-and procedure and macro Common Lisp style docstrings (a few Scheme
-implementations support such docstrings or variants of them).
-
-Due to these features, @strong{unit-test-tap will not work without
-modification on other Scheme implementations.}
+There is one major catch, though. unit-test-tap uses R@sup{6}RS and
+R@sup{7}RS-small exception handling, which may not handle all exception
+types in every Scheme implementation and/or may handle them
+suboptimally. It may be impossible to test for a specific error type for
+exceptions not thrown with @code{raise} from R@sup{6}RS and
+R@sup{7}RS-small.
 
 @node Test Result Definitions
 @section Test Result Definitions
@@ -260,10 +276,8 @@ one's own runners which can customize the output. However, SRFI-64 with
 a custom runner is a bit suboptimal for writing test results in TAP
 format. Additionally, marking tests to skip or being expected to fail
 would be more conveniently implemented using keyword arguments in the
-test asserts themselves, though implementing keyword arguments in a
-cross-Scheme-implementation portable fashion is difficult (this was
-probably the reason SRFI-64 does it the way it does). These were the
-motivations for writing the unit-test-tap module/library.
+test asserts themselves. These were the motivations for writing the
+unit-test-tap module/library.
 
 
 @node TAP - Test Anything Protocol
@@ -347,6 +361,9 @@ familiar with SRFI-64, then the API of unit-test-tap will feel very
 familiar with many procedures/macros having the same name and similar
 arguments.
 
+@strong{Note that Scheme symbols are used for key names when using
+keyword arguments in this library.}
+
 @menu
 * Starting Up::
 * Doing Tests::
@@ -370,14 +387,14 @@ test output to (default is standard output) and the prefix to use for
 the diagnostic YAML blocks (default is nothing).
 
 @lisp
-(test-begin N [#:port PORT] [#:yaml-prefix PREFIX])
+(test-begin N ['port PORT] ['yaml-prefix PREFIX])
 @end lisp
 
 where the square brackets denote optional parts (the brackets should be
 left out if the particular keyword argument is used). The YAML prefix is
 provided for the case when the test harness expects TAP output older
 than version 13, in which case @var{PREFIX} should start with the
-@code{"#"} character.
+@code{"#"} character. Note the use of symbols to give keyword arguments.
 
 @node Doing Tests
 @section Doing Tests
@@ -386,7 +403,7 @@ The simplest test just checks that a single argument, @var{EXPR},
 evaluates to non @code{#f} (logically true), which is
 
 @lisp
-(test-assert EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-assert EXPR [NAME] ['skip SKIP] ['xfail XFAIL])
 @end lisp
 
 where the test name, whether to skip the test (default is not to skip),
@@ -423,19 +440,19 @@ or
 and a test to be skipped
 
 @lisp
-(test-assert (+ 3 2) "always skipped" #:skip #t)
+(test-assert (+ 3 2) "always skipped" 'skip #t)
 @end lisp
 
 and an XFAIL test
 
 @lisp
-(test-assert #f "expected fails" #:xfail #t)
+(test-assert #f "expected fails" 'xfail #t)
 @end lisp
 
 and an XPASS test
 
 @lisp
-(test-assert #t "expected fail but passes anyways" #:xfail #t)
+(test-assert #t "expected fail but passes anyways" 'xfail #t)
 @end lisp
 
 Two objects or expressions @var{EXPR0} and @var{EXPR1} can be compared
@@ -443,9 +460,9 @@ for various definitions of equality (@code{eq?}, @code{eqv?}, and
 @code{equal?}) by
 
 @lisp
-(test-eq EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL])
-(test-eqv EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL])
-(test-equal EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-eq EXPR0 EXPR1 [NAME] ['skip SKIP] ['xfail XFAIL])
+(test-eqv EXPR0 EXPR1 [NAME] ['skip SKIP] ['xfail XFAIL])
+(test-equal EXPR0 EXPR1 [NAME] ['skip SKIP] ['xfail XFAIL])
 @end lisp
 
 Two numbers, or expressions that evaluate to numbers, @var{EXPR0} and
@@ -453,7 +470,7 @@ Two numbers, or expressions that evaluate to numbers, @var{EXPR0} and
 numerical accuracy @var{TOLERANCE}
 
 @lisp
-(test-approximate EXPR0 EXPR1 TOLERANCE [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-approximate EXPR0 EXPR1 TOLERANCE [NAME] ['skip SKIP] ['xfail XFAIL])
 @end lisp
 
 All five of the previously described test macros have counterparts with
@@ -462,7 +479,7 @@ another more general test macro, that does not appear in SRFI-64, which
 is @code{test-pred} and is used as follows
 
 @lisp
-(test-pred (PRED . ARGS) [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-pred (PRED . ARGS) [NAME] ['skip SKIP] ['xfail XFAIL])
 @end lisp
 
 where the test evaluates the expression
@@ -482,7 +499,7 @@ As an example, @code{test-eq} described previously could be implemented
 as
 
 @lisp
-(test-pred (eq? EXPR0 EXPR1) [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-pred (eq? EXPR0 EXPR1) [NAME] ['skip SKIP] ['xfail XFAIL])
 @end lisp
 
 The last test, which also has an SRFI-64 counterpart, is
@@ -490,7 +507,7 @@ The last test, which also has an SRFI-64 counterpart, is
 an error, specifically of type @var{ERROR-TYPE}, and is used as follows
 
 @lisp
-(test-error ERROR-TYPE EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL])
+(test-error ERROR-TYPE EXPR [NAME] ['skip SKIP] ['xfail XFAIL])
 @end lisp
 
 If the wrong type of error/exception is thrown (doesn't match
@@ -575,7 +592,7 @@ functionality.
 @section Initialization and Finishing
 
 @scmanchorindex{test-begin}
-@deffn {Scheme Procedure} test-begin N [#:port P] [#:yaml-prefix PREFIX]
+@deffn {Scheme Procedure} test-begin N ['port P] ['yaml-prefix PREFIX]
 Starts the unit testing framework/suite that is expected to have @var{N}
 tests in total. All counters are reset and the TAP header is written to
 output. The test writes its output to @code{(current-output-port)}, or
@@ -680,58 +697,58 @@ exception occured or not in beginning the group or running @var{EXPR}.
 @section Tests
 
 @scmanchorindex{test-pred}
-@deffn {Scheme Procedure} test-pred (PRED . ARGS) [NAME] [#:skip SKIP] [#:xfail XFAIL]
+@deffn {Scheme Procedure} test-pred (PRED . ARGS) [NAME] ['skip SKIP] ['xfail XFAIL]
 Asserts that the evaluation of @code{(PRED . ARGS)} is non
 @code{#f}. The test takes an optional @var{NAME}. Indicate whether the
 test should be skipped or is expected to fail with the keyword arguments
-@code{#:skip} and @code{#:xfail} set to non @code{#f} (the default is
+@code{'skip} and @code{'xfail} set to non @code{#f} (the default is
 @code{#f}). Predicates that take any number of arguments, including
 zero, are supported. An example test to see if the result of two
 mathematical expressions are equal but that one expects it to fail would
 be
 
 @lisp
-(test-pred (= (* 2 3) (* 2 4)) "example" #:xfail #t)
+(test-pred (= (* 2 3) (* 2 4)) "example" 'xfail #t)
 @end lisp
 @end deffn
 
 @scmanchorindex{test-assert}
-@deffn {Scheme Macro} test-assert EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL]
+@deffn {Scheme Macro} test-assert EXPR [NAME] ['skip SKIP] ['xfail XFAIL]
 Asserts that @var{EXPR} evaluates to non @code{#f}. The test takes an
 optional @var{NAME}. Indicate whether the test should be skipped or
-is expected to fail with the keyword arguments @code{#:skip} and
-@code{#:xfail} set to non @code{#f} (the default is @code{#f}).
+is expected to fail with the keyword arguments @code{'skip} and
+@code{'xfail} set to non @code{#f} (the default is @code{#f}).
 @end deffn
 
 @scmanchorindex{test-eq}
-@deffn {Scheme Macro} test-eq EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL]
-@deffnx {Scheme Macro} test-eqv EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL]
-@deffnx {Scheme Macro} test-equal EXPR0 EXPR1 [NAME] [#:skip SKIP] [#:xfail XFAIL]
+@deffn {Scheme Macro} test-eq EXPR0 EXPR1 [NAME] ['skip SKIP] ['xfail XFAIL]
+@deffnx {Scheme Macro} test-eqv EXPR0 EXPR1 [NAME] ['skip SKIP] ['xfail XFAIL]
+@deffnx {Scheme Macro} test-equal EXPR0 EXPR1 [NAME] ['skip SKIP] ['xfail XFAIL]
 Asserts @code{(pred EXPR0 EXPR1)} for @code{pred} being @code{eq?},
 @code{eqv?}, and @code{equal?} respectively. The test takes an optional
 @var{NAME}. Indicate whether the test should be skipped or is expected
-to fail with the keyword arguments @code{#:skip} and @code{#:xfail} set
+to fail with the keyword arguments @code{'skip} and @code{'xfail} set
 to non @code{#f} (the default is @code{#f}).
 @end deffn
 
 @scmanchorindex{test-approximate}
-@deffn {Scheme Macro} test-approximate EXPR0 EXPR1 TOLERANCE [NAME] [#:skip SKIP] [#:xfail XFAIL]
+@deffn {Scheme Macro} test-approximate EXPR0 EXPR1 TOLERANCE [NAME] ['skip SKIP] ['xfail XFAIL]
 Asserts that the absolute value of the numerical difference between
 @var{EXPR0} and @var{EXPR1} is less than or equal to
 @var{TOLERANCE}. The test takes an optional @var{NAME}. Indicate whether
 the test should be skipped or is expected to fail with the keyword
-arguments @code{#:skip} and @code{#:xfail} set to non @code{#f} (the
+arguments @code{'skip} and @code{'xfail} set to non @code{#f} (the
 default is @code{#f}).
 @end deffn
 
 @scmanchorindex{test-error}
-@deffn {Scheme Macro} test-error ERROR-TYPE EXPR [NAME] [#:skip SKIP] [#:xfail XFAIL]
+@deffn {Scheme Macro} test-error ERROR-TYPE EXPR [NAME] ['skip SKIP] ['xfail XFAIL]
 Asserts that evaluating @var{EXPR} throws an exception of type
 @var{ERROR-TYPE} (set to @code{#t} to indicate any exception
 type). Throwing no exception or an exception of a different type is
 considered a failure. The test takes an optional @var{NAME}. Indicate
 whether the test should be skipped or is expected to fail with the
-keyword arguments @code{#:skip} and @code{#:xfail} set to non @code{#f}
+keyword arguments @code{'skip} and @code{'xfail} set to non @code{#f}
 (the default is @code{#f}).
 @end deffn
 

@@ -5,22 +5,28 @@ License: LGPL 2.1 or later (see COPYING)
 A TAP output based unit testing framework that is in the spirit of
 SRFI-64 (http://srfi.schemers.org/srfi-64/srfi-64.html).
 
-The interface is similar and many procedures have the same names.
+A TAP output based unit testing framework that is in the spirit of
+SRFI-64 (http://srfi.schemers.org/srfi-64/srfi-64.html). The
+interface is similar and many procedures have the same names.
 However, skip and expected fail functionality are included into
 the tests themselves as keyword arguments instead of as separate
 procedures/macros. Additionally, the test-name argument has been
 moved to the end instead of being the first argument of each
-test macro, so as to better work with Guile's optional and
+test macro, so as to better work with custom optional and
 keyword argument facilities. Another major difference is that
 test-begin's cannot be nested, though test-group-begin does
 add one level of nesting where all the tests within a group count
 as a single test for TAP output purposes (first one to FAIL or
 XPASS fails the whole group).
 
-This module is not portable outside of Guile at this time. It
-uses Guile specific optional and keyword argument handling lambda*,
-Common Lisp style docstrings, and uses Guile specific module/library
-declaration.
+This library is Guile, R6RS, and R7RS compatible. The main source file
+src/unit-test-tap.scm is Guile specific (Common Lisp style docstrings
+and Guile specific module/library declaration), but R6RS and R7RS
+versions (src/r6rs/unit-test-tap.scm and src/r7rs/unit-test-tap.scm) are
+built from it as part of building this package. The one catch is that
+the R6RS and R7RS exception handling is used, which may not work with
+all exception types in some implementations, especially if they were not
+thrown with the R6RS or R7RS "raise" procedure.
 
 
 INSTALL Instructions ===================================================
@@ -29,40 +35,48 @@ Generic instructions for configuring, compiling, and installing this
 library are in the INSTALL file. Specific instructions are detailed
 here.
 
-This library is for Guile >= 2.0, and therefore requires it to be
-present. Additionally, pkg-config is required for locating the right
-version of Guile and getting its configuration information.
 
-The library is entirely contained in src/unit-tap-test.scm. It is
-possible to just copy the file to where ever it is needed; such as into
-Guile’s site directory, which can be found by running (%site-dir) at the
-REPL. On GNU/Linux, it will usually be something like
-/usr/share/guile/site/X.Y where X.Y is the effective version of Guile.
+The R6RS and R7RS-small versions have to be built from the Guile
+specific version. After being built, they are found at
+src/r6rs/unit-test-tap.scm and src/r7rs/unit-test-tap.scm.
 
-However, a configure script is provided that will produce a Makefile
-that can be used to compile the library to Guile’s bytecode format (go
-files), install the library into Guile’s site directories for Scheme
-files and go files, build the documentation, and run unit tests on the
-library. The package is configured using the configure script, which
-takes user input to tune the build, finds Guile and where Guile wants
-Scheme and go files to be installed, and checks that the required Scheme
-libraries/modules are available. Inside the package directory, run
+The Guile version of the library is entirely contained in
+src/unit-tap-test.scm. It is possible to just copy the file to where
+ever it is needed; such as into Guile's site directory, which can be
+found by running "(%site-dir)" at the REPL. On GNU/Linux, it will
+usually be something like /usr/share/guile/site/X.Y where X.Y is the
+effective version of Guile. Though, using the provided configure script
+and make will allow this to be done in a more automated fashion as well
+as compile to Guile's bytecode format (go files).
+
+A configure script is provided that will produce a Makefile that can be
+used to build the R6RS and R7RS-small versions of the library, compile
+the library to Guile's bytecode format (go files), install the library
+into Guile's site directories for Scheme files and go files, build the
+documentation, and run unit tests on the library in both Guile and
+Chicken. The package is configured using the configure script, which
+takes user input to tune the build, finds and checks Guile (where Guile
+wants Scheme and go files to be installed and that the required
+libraries are available), and finds and checks Chicken for use in
+testing (default is yes). Inside the package directory, run
 
     ./configure [--prefix=DIR] [--enable-compile-scm=yes/no] \
-        [--with-guile=X.Y]
+        [--with-guile=X.Y] [--enable-test-chicken=yes/no]
 
 where optional parameters can be used to set the base directory (prefix)
-for installing the documentation, whether to compile to Guile’s bytecode
-format (default is yes), and which Guile effective version to target and
-look for (default is 2.2, followed by 2.0 if 2.2 cannot be found).
+for installing the documentation, whether to compile to Guile's bytecode
+format (default is yes), which Guile effective version to target and
+look for (default is 2.2, followed by 2.0 if 2.2 cannot be found), and
+whether to do unit tests using Chicken in addition to Guile.
 
 Now that the Makefile has been made, one runs
 
     make
 
 to build the documentation in info format and compile the library to
-Guile’s bytecode depending on whether that was enabled or not. The
-library can be checked by running unit tests on it by running
+Guile's bytecode depending on whether that was enabled or
+not. The library can be checked by running unit tests on it (using Guile
+and optionally Chicken) by running
 
     make check
 
@@ -70,13 +84,11 @@ Everything can be installed by running
 
     make install
 
-HTML documentation can be built using make html and installed by
+HTML documentation can be built using "make html" and installed by
+"make install-html".
 
-    make install-html
-
-If you grab unit-test-tap from its source code repository, configure and
-Makefile will not be present yet. You need Autoconf and Automake in
+If you grab unit-test-tap from its source code repository,
+configure will not be present yet. You need autoconf and automake in
 order to generate them. They are generated by running the command
-
-    autoreconf
+autoreconf.
 
