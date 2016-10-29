@@ -27,3 +27,23 @@
         (rnrs io simple (6))
         (unit-test-tap))
 
+;;; Make a non-destructive version of open-string-output-port. The R6RS
+;;; standard says the read procedure it returns is destructive (all text
+;;; in the string port is cleared), but it is preferable to have a
+;;; non-destructive version.
+(define open-string-output-port-nondestructive
+  (lambda ()
+    (let-values (((p get-output) (open-string-output-port)))
+      (values p
+              ;; Read the output two times and compare them. If they
+              ;; are not equal, then the read was destructive as R6RS
+              ;; instructs and the data needs to be written back.
+              ;; Otherwise, the scheme implementation doesn't quite
+              ;; follow this behavior and the output can be left as is.
+              (lambda () (let ((out (get-output))
+                               (out2 (get-output)))
+                           (if (not (string=? out out2))
+                               (begin
+                                 (put-string p out)
+                                 (flush-output-port p)))
+                           out))))))

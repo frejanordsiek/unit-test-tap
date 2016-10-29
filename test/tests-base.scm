@@ -24,6 +24,7 @@
 ;;; generated manually while unit-test-tap's output is put into
 ;;; string ports to be evaluated for correctness.
 
+
 ;; Short utility procedure to check if a string is 0 length.
 (define string-null?
   (lambda (s) (= 0 (string-length s))))
@@ -45,7 +46,8 @@
      (call-with-string-output-port
       (lambda (p) (if (string=? fmt "~a")
                       (display obj p)
-                      (write obj p)))))))
+                      (write obj p))
+              (flush-output-port p))))))
 
 ;;; Get the newline character
 (define newline-char (call-with-string-output-port newline))
@@ -96,6 +98,7 @@
 
 ;;; Output the header
 (display (TAP-header 50))
+(flush-output-port (current-output-port))
 
 
 ;;; Test the TAP headers
@@ -107,6 +110,7 @@
                                            (test-begin n 'port p)))))
                             (map (lambda (x) (+ 1 x))
                                  (iota 10)))))
+(flush-output-port (current-output-port))
 
 ;;; Test initialization of variables by test-begin for a random
 ;;; number of tests and a prefix that is the conversion of that random
@@ -117,8 +121,9 @@
                       (lambda (n prefix)
                         (let ((pass #f))
                           (let-values (((p get-output)
-                                        (open-string-output-port)))
+                                        (open-string-output-port-nondestructive)))
                             (test-begin n 'port p 'yaml-prefix prefix)
+                            (flush-output-port p)
                             (set! pass
                               (and (string=? (TAP-header n)
                                              (get-output))
@@ -132,6 +137,7 @@
                           pass))
                       (map (lambda (x) (+ 1 x)) (iota number))
                       (map (lambda (x) (number->string x)) (iota number))))))
+(flush-output-port (current-output-port))
 
 ;;; Macro to check test-assert/eq/eqv/equal/approximate for a single
 ;;; state given two lists of of expressions to test (second one ignored
@@ -151,8 +157,9 @@
                                        ("XFAIL" . 2) ("XPASS" . 3)
                                        ("SKIP" . 4)
                                        ("EVAL EXCEPTION" . 1))))))
-       (let-values (((p get-output) (open-string-output-port)))
+       (let-values (((p get-output) (open-string-output-port-nondestructive)))
          (test-begin number 'port p 'yaml-prefix prefix)
+         (flush-output-port p)
          ;; The test is the iteration over all the expressions till there
          ;; is a failure
          (display
@@ -225,6 +232,7 @@
                           (test-equal x y name 'skip skip 'xfail xfail))
                          (else (test-approximate x y tol name
                                                  'skip skip 'xfail xfail)))
+                   (flush-output-port p)
                    ;; Append the output for the respective state.
                    (set! output
                      (cond ((string=? state "PASS")
@@ -311,7 +319,9 @@
          ;; print all messages.
          (for-each (lambda (x) (display (string-append x newline-char)))
                    msg)
-         (close-port p))))))
+         (flush-output-port (current-output-port))
+         (close-port p))
+       (flush-output-port (current-output-port))))))
 
 ;;; Macro to check all test-assert states. It takes expression lists
 ;;; that should pass as well as those that should fail. For assert, the
@@ -420,6 +430,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-pred ((lambda () #t))))))))
+(flush-output-port (current-output-port))
 
 ;;; 3 args
 (display (response (get-count) "test-pred 3 args"
@@ -431,6 +442,7 @@
                                 (test-pred ((lambda (arg0 arg1 arg2)
                                               (+ arg0 arg1 arg2))
                                             1 2 3)))))))
+(flush-output-port (current-output-port))
 
 ;;; 6 args
 (display (response (get-count) "test-pred 6 args"
@@ -442,6 +454,7 @@
                                 (test-pred ((lambda (arg0 arg1 arg2 arg3 arg4 arg5)
                                               (* arg0 arg1 arg2 arg3 arg4 arg5))
                                             1 2 3 0 -1 2.2)))))))
+(flush-output-port (current-output-port))
 
 ;;; Eval exception
 (display (response (get-count) "test-pred EVAL EXCEPTION"
@@ -465,6 +478,7 @@
                                 (test-pred ((lambda (arg0 arg1 arg2 arg3)
                                               (* arg0 arg1 arg2 arg3))
                                             1 2 3 (excpt-raise 'blah))))))))
+(flush-output-port (current-output-port))
 
 ;;; Predicate exception
 (display (response (get-count) "test-pred PRED EXCEPTION"
@@ -485,6 +499,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-pred (excpt-raise 'en)))))))
+(flush-output-port (current-output-port))
 
 
 ;;; Check test-error
@@ -497,6 +512,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 "a")))))))
+(flush-output-port (current-output-port))
 
 ;;; Catch no error when catching all errors (FAIL)
 (display (response (get-count) "test-error catch all FAIL"
@@ -515,6 +531,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 2)))))))
+(flush-output-port (current-output-port))
 
 ;;; Catch no error when catching all errors (XFAIL)
 (display (response (get-count) "test-error catch all XFAIL"
@@ -534,6 +551,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 2) 'xfail #t))))))
+(flush-output-port (current-output-port))
 
 ;;; Catch an error when catching all errors (XPASS)
 (display (response (get-count) "test-error catch all XPASS"
@@ -552,6 +570,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 "a") 'xfail #t))))))
+(flush-output-port (current-output-port))
 
 ;;; Skip catch no error when catching all errors (SKIP)
 (display (response (get-count) "test-error catch all SKIP"
@@ -561,7 +580,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error #t (+ 1 2) 'skip #t))))))
-
+(flush-output-port (current-output-port))
 
 ;;; Catch a specific error (PASS)
 (display (response (get-count) "test-error specific error PASS"
@@ -571,6 +590,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error 'ab (excpt-raise 'ab)))))))
+(flush-output-port (current-output-port))
 
 ;;; Fail to catch anything while trying to catch a specific error (FAIL)
 (display (response (get-count) "test-error specific error none thrown FAIL"
@@ -589,6 +609,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error 'ab (+ 1 2)))))))
+(flush-output-port (current-output-port))
 
 ;;; Catch wrong error while trying to catch a specific error (FAIL)
 (display (response (get-count) "test-error specific error wrong thrown FAIL"
@@ -610,6 +631,7 @@
                               (lambda (p)
                                 (test-begin 1 'port p)
                                 (test-error 'ab (excpt-raise 'ef)))))))
+(flush-output-port (current-output-port))
 
 
 ;;; Test group features.
@@ -635,6 +657,7 @@
                      (and output-same group-success
                           (not (test-group-failed))
                           (check-test-counts 1 0 0 0 0)))))
+(flush-output-port (current-output-port))
 
 ;;; Enter and leave group with two passed tests
 (display (response (get-count) "group with two PASS tests"
@@ -659,6 +682,7 @@
                      (and output-same group-success
                           (not (test-group-failed))
                           (check-test-counts 1 0 0 0 0)))))
+(flush-output-port (current-output-port))
 
 ;;; Enter and leave group with two tests (XFAIL PASS)
 (display (response (get-count) "group with XFAIL PASS tests"
@@ -683,6 +707,7 @@
                      (and output-same group-success
                           (not (test-group-failed))
                           (check-test-counts 1 0 0 0 0)))))
+(flush-output-port (current-output-port))
 
 ;;; Enter and leave group with two tests (FAIL PASS)
 (display (response (get-count) "group with FAIL PASS tests"
@@ -717,6 +742,7 @@
                      (and output-same group-success
                           (test-group-failed)
                           (check-test-counts 0 1 0 0 0)))))
+(flush-output-port (current-output-port))
 
 ;;; Enter and leave group with two tests (XPASS PASS)
 (display (response (get-count) "group with XPASS PASS tests"
@@ -750,6 +776,7 @@
                      (and output-same group-success
                           (test-group-failed)
                           (check-test-counts 0 0 0 1 0)))))
+(flush-output-port (current-output-port))
 
 ;;; Double begin group
 (display (response (get-count) "group ERROR begin twice"
@@ -763,6 +790,7 @@
                                      (test-group-begin group-name)
                                      (set! had-error #f))))
                      had-error)))
+(flush-output-port (current-output-port))
 
 ;;; End unstarted group
 (display (response (get-count) "group ERROR end group not started"
@@ -775,7 +803,7 @@
                                      (test-group-end)
                                      (set! had-error #f))))
                      had-error)))
-
+(flush-output-port (current-output-port))
 
 ;;; Check test-group-with-cleanup
 
@@ -794,6 +822,7 @@
                           (set! cleaned-up #t))))
                      (and finished cleaned-up
                           (string-null? (test-group-name))))))
+(flush-output-port (current-output-port))
 
 ;;; test-group-with-cleanup error in body
 (display (response (get-count)
@@ -812,3 +841,4 @@
                           (set! cleaned-up #t))))
                      (and (not finished) cleaned-up
                           (string-null? (test-group-name))))))
+(flush-output-port (current-output-port))

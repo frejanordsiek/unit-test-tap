@@ -66,6 +66,7 @@
                       test-assert test-eq test-eqv test-equal
                       test-approximate test-error))
 
+
 ;;; Define SRFI-1 iota
 (define iota
   (lambda (n)
@@ -264,7 +265,8 @@
     (let ((proc (lambda (m)
                   (display (string-append *test-yaml-prefix* m) *test-port*)
                   (newline *test-port*))))
-      (for-each proc msg))))
+      (for-each proc msg))
+    (flush-output-port *test-port*)))
 
 
 ;;; Create the failure messaging block, which is in the form of
@@ -548,7 +550,8 @@
     (display "TAP version 13" *test-port*)
     (newline *test-port*)
     (display (string-append "1.." (number->string n)) *test-port*)
-    (newline *test-port*)))
+    (newline *test-port*)
+    (flush-output-port *test-port*)))
 
 
 ;;; End testing, which causes an exit with the status determined

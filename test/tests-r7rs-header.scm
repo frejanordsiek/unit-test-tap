@@ -25,10 +25,10 @@
         (scheme write)
         (unit-test-tap))
 
-;; Make the R6RS call-with-string-output-port and
-;; open-string-output-port in terms of R7RS
-;; open-output-string and get-output-string.
-(define open-string-output-port
+;; Make R6RS call-with-string-output-port and
+;; a non-desctructive version of open-string-output-port in terms
+;; of R7RS open-output-string and get-output-string.
+(define open-string-output-port-nondestructive
   (lambda ()
     (let ((p (open-output-string)))
       (values p (lambda () (get-output-string p))))))
@@ -37,6 +37,7 @@
   (lambda (proc)
     (let ((p (open-output-string)))
       (proc p)
+      (flush-output-port p)
       (let ((out-s (get-output-string p)))
         (close-port p)
         out-s))))
