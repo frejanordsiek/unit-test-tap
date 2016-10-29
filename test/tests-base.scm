@@ -513,7 +513,8 @@
                       "    expr0: 1" newline-char
                       "    expr1: 2" newline-char
                       "    expr2: 3" newline-char
-                      "    expr3: (excpt-raise (quote blah))"
+                      "    expr3: "
+                      (my-format "~s" '(excpt-raise 'blah))
                       newline-char
                       "  ..." newline-char))
       (out-got (call-with-string-output-port
@@ -548,7 +549,8 @@
                       newline-char
                       "  error: en" newline-char
                       "  got: " newline-char
-                      "    expr0: (quote en)"
+                      "    expr0: "
+                      (my-format "~s" ''en)
                       newline-char
                       "  evaluated: " newline-char
                       "    arg0: en" newline-char
@@ -581,7 +583,7 @@
       (out-got (call-with-string-output-port
                 (lambda (p)
                   (test-begin 1 'port p)
-                  (test-error #t (+ 1 "a"))))))
+                  (test-error #t (excpt-raise 'blah))))))
   (let ((success (string=? out-expected out-got)))
     (display (response (get-count) "test-error catch all PASS" success))
     (if (not success)
@@ -675,13 +677,14 @@
                       "Expected to fail but didn't"
                       newline-char
                       "  got: " newline-char
-                      "    expr0: (+ 1 a)"
+                      "    expr0: "
+                      (my-format "~a" '(excpt-raise 'blah))
                       newline-char
                       "  ..." newline-char))
       (out-got (call-with-string-output-port
                 (lambda (p)
                   (test-begin 1 'port p)
-                  (test-error #t (+ 1 "a") 'xfail #t)))))
+                  (test-error #t (excpt-raise 'blah) 'xfail #t)))))
   (let ((success (string=? out-expected out-got)))
     (display (response (get-count) "test-error catch all XPASS" success))
     (if (not success)
@@ -790,7 +793,7 @@
                       "    expected: ab" newline-char
                       "  got: " newline-char
                       "    expr0: "
-                      "(excpt-raise (quote ef))"
+                      (my-format "~s" '(excpt-raise 'ef))
                       newline-char
                       "  ..." newline-char))
       (out-got (call-with-string-output-port
