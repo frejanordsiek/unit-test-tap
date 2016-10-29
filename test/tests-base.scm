@@ -288,31 +288,39 @@
                    (cond ((not (string=? output (get-output)))
                           (begin
                             (set! msg (list
+                                       "  ---"
                                        (string-append "  FAILED "
                                                       (number->string count))
-                                       "reason: output not correct"
-                                       (string-append "  arg0: "
+                                       "  reason: output not correct"
+                                       (string-append "    arg0: "
                                                       (my-format "~a" x))
-                                       (my-format "~s" output)
-                                       (my-format "~s"
-                                                  (get-output))))
+                                       (string-append
+                                        "    expected-output: "
+                                        (my-format "~s" output))
+                                       (string-append
+                                        "    got-output: "
+                                        (my-format "~s"
+                                                   (get-output)))
+                                       "  ..."))
                             #f))
                          ;; Check the counts and return diagnostic
                          ;; information if it fails
                          ((not (apply check-test-counts new-counts))
                           (begin
                             (set! msg (list
+                                       "  ---"
                                        (string-append "  FAILED "
                                                       (number->string count))
-                                       "reason: counts not right"
-                                       (string-append "  arg0: "
+                                       "  reason: counts not right"
+                                       (string-append "    arg0: "
                                                       (my-format "~a" x))
                                        (string-append
                                         "  counts: "
                                         (my-format "~a" (get-test-counts)))
                                        (string-append
                                         "  expected-counts: "
-                                        (my-format "~a" new-counts))))
+                                        (my-format "~a" new-counts))
+                                       "  ..."))
                             #f))
                          (else (loop (+ 1 count) (cdr items0)
                                      (cdr items1)))))))))
@@ -423,214 +431,386 @@
 ;;; well as exeptions.
 
 ;;; 0 args
-(display (response (get-count) "test-pred 0 args"
-                   (string=? (string-append (TAP-header 1)
-                                            "ok 1" newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-pred ((lambda () #t))))))))
+(let ((out-expected (string-append (TAP-header 1) "ok 1" newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-pred ((lambda () #t)))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-pred 0 args" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; 3 args
-(display (response (get-count) "test-pred 3 args"
-                   (string=? (string-append (TAP-header 1)
-                                            "ok 1" newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-pred ((lambda (arg0 arg1 arg2)
-                                              (+ arg0 arg1 arg2))
-                                            1 2 3)))))))
+(let ((out-expected (string-append (TAP-header 1) "ok 1" newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-pred ((lambda (arg0 arg1 arg2)
+                                (+ arg0 arg1 arg2))
+                              1 2 3))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-pred 3 args" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; 6 args
-(display (response (get-count) "test-pred 6 args"
-                   (string=? (string-append (TAP-header 1)
-                                            "ok 1" newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-pred ((lambda (arg0 arg1 arg2 arg3 arg4 arg5)
-                                              (* arg0 arg1 arg2 arg3 arg4 arg5))
-                                            1 2 3 0 -1 2.2)))))))
+(let ((out-expected (string-append (TAP-header 1) "ok 1" newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-pred ((lambda (arg0 arg1 arg2 arg3 arg4 arg5)
+                                (* arg0 arg1 arg2 arg3 arg4 arg5))
+                              1 2 3 0 -1 2.2))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-pred 6 args" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Eval exception
-(display (response (get-count) "test-pred EVAL EXCEPTION"
-                   (string=? (string-append (TAP-header 1)
-                                            "not ok 1" newline-char
-                                            "  ---" newline-char
-                                            "  message: Error thrown "
-                                            "evaluating expressions"
-                                            newline-char
-                                            "  error: blah" newline-char
-                                            "  got: " newline-char
-                                            "    expr0: 1" newline-char
-                                            "    expr1: 2" newline-char
-                                            "    expr2: 3" newline-char
-                                            "    expr3: (excpt-raise (quote blah))"
-                                            newline-char
-                                            "  ..." newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-pred ((lambda (arg0 arg1 arg2 arg3)
+(let ((out-expected
+       (string-append (TAP-header 1)
+                      "not ok 1" newline-char
+                      "  ---" newline-char
+                      "  message: Error thrown "
+                      "evaluating expressions"
+                      newline-char
+                      "  error: blah" newline-char
+                      "  got: " newline-char
+                      "    expr0: 1" newline-char
+                      "    expr1: 2" newline-char
+                      "    expr2: 3" newline-char
+                      "    expr3: (excpt-raise (quote blah))"
+                      newline-char
+                      "  ..." newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-pred ((lambda (arg0 arg1 arg2 arg3)
                                               (* arg0 arg1 arg2 arg3))
-                                            1 2 3 (excpt-raise 'blah))))))))
+                                            1 2 3 (excpt-raise 'blah)))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-pred EVAL EXCEPTION" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Predicate exception
-(display (response (get-count) "test-pred PRED EXCEPTION"
-                   (string=? (string-append (TAP-header 1)
-                                            "not ok 1" newline-char
-                                            "  ---" newline-char
-                                            "  message: Error thrown "
-                                            "applying excpt-raise"
-                                            newline-char
-                                            "  error: en" newline-char
-                                            "  got: " newline-char
-                                            "    expr0: (quote en)"
-                                            newline-char
-                                            "  evaluated: " newline-char
-                                            "    arg0: en" newline-char
-                                            "  ..." newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-pred (excpt-raise 'en)))))))
-(flush-output-port (current-output-port))
+(let ((out-expected
+       (string-append (TAP-header 1)
+                      "not ok 1" newline-char
+                      "  ---" newline-char
+                      "  message: Error thrown "
+                      "applying excpt-raise"
+                      newline-char
+                      "  error: en" newline-char
+                      "  got: " newline-char
+                      "    expr0: (quote en)"
+                      newline-char
+                      "  evaluated: " newline-char
+                      "    arg0: en" newline-char
+                      "  ..." newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-pred (excpt-raise 'en))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-pred PRED EXCEPTION" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 
 
 ;;; Check test-error
 
 ;;; Catch an error when catching all errors (PASS)
-(display (response (get-count) "test-error catch all PASS"
-                   (string=? (string-append (TAP-header 1)
-                                            "ok 1" newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error #t (+ 1 "a")))))))
+(let ((out-expected
+       (string-append (TAP-header 1) "ok 1" newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error #t (+ 1 "a"))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error catch all PASS" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Catch no error when catching all errors (FAIL)
-(display (response (get-count) "test-error catch all FAIL"
-                   (string=? (string-append (TAP-header 1)
-                                            "not ok 1" newline-char
-                                            "  ---" newline-char
-                                            "  message: "
-                                            "Exception was not thrown"
-                                            newline-char
-                                            "  error: #t" newline-char
-                                            "  got: " newline-char
-                                            "    expr0: (+ 1 2)"
-                                            newline-char
-                                            "  ..." newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error #t (+ 1 2)))))))
+(let ((out-expected
+       (string-append (TAP-header 1)
+                      "not ok 1" newline-char
+                      "  ---" newline-char
+                      "  message: "
+                      "Exception was not thrown"
+                      newline-char
+                      "  error: #t" newline-char
+                      "  got: " newline-char
+                      "    expr0: (+ 1 2)"
+                      newline-char
+                      "  ..." newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error #t (+ 1 2))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error catch all FAIL" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Catch no error when catching all errors (XFAIL)
-(display (response (get-count) "test-error catch all XFAIL"
-                   (string=? (string-append (TAP-header 1)
-                                            "not ok 1 # TODO"
-                                            newline-char
-                                            "  ---" newline-char
-                                            "  message: "
-                                            "Exception was not thrown"
-                                            newline-char
-                                            "  error: #t" newline-char
-                                            "  got: " newline-char
-                                            "    expr0: (+ 1 2)"
-                                            newline-char
-                                            "  ..." newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error #t (+ 1 2) 'xfail #t))))))
+(let ((out-expected
+       (string-append (TAP-header 1)
+                      "not ok 1 # TODO"
+                      newline-char
+                      "  ---" newline-char
+                      "  message: "
+                      "Exception was not thrown"
+                      newline-char
+                      "  error: #t" newline-char
+                      "  got: " newline-char
+                      "    expr0: (+ 1 2)"
+                      newline-char
+                      "  ..." newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error #t (+ 1 2) 'xfail #t)))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error catch all XFAIL" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Catch an error when catching all errors (XPASS)
-(display (response (get-count) "test-error catch all XPASS"
-                   (string=? (string-append (TAP-header 1)
-                                            "ok 1 # TODO"
-                                            newline-char
-                                            "  ---" newline-char
-                                            "  message: "
-                                            "Expected to fail but didn't"
-                                            newline-char
-                                            "  got: " newline-char
-                                            "    expr0: (+ 1 a)"
-                                            newline-char
-                                            "  ..." newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error #t (+ 1 "a") 'xfail #t))))))
+(let ((out-expected
+       (string-append (TAP-header 1)
+                      "ok 1 # TODO"
+                      newline-char
+                      "  ---" newline-char
+                      "  message: "
+                      "Expected to fail but didn't"
+                      newline-char
+                      "  got: " newline-char
+                      "    expr0: (+ 1 a)"
+                      newline-char
+                      "  ..." newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error #t (+ 1 "a") 'xfail #t)))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error catch all XPASS" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Skip catch no error when catching all errors (SKIP)
-(display (response (get-count) "test-error catch all SKIP"
-                   (string=? (string-append (TAP-header 1)
-                                            "ok 1 # SKIP" newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error #t (+ 1 2) 'skip #t))))))
+(let ((out-expected
+       (string-append (TAP-header 1) "ok 1 # SKIP" newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error #t (+ 1 2) 'skip #t)))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error catch all SKIP" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Catch a specific error (PASS)
-(display (response (get-count) "test-error specific error PASS"
-                   (string=? (string-append (TAP-header 1)
-                                            "ok 1" newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error 'ab (excpt-raise 'ab)))))))
+(let ((out-expected
+       (string-append (TAP-header 1) "ok 1" newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error 'ab (excpt-raise 'ab))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error specific error PASS" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Fail to catch anything while trying to catch a specific error (FAIL)
-(display (response (get-count) "test-error specific error none thrown FAIL"
-                   (string=? (string-append (TAP-header 1)
-                                            "not ok 1" newline-char
-                                            "  ---" newline-char
-                                            "  message: "
-                                            "Exception was not thrown"
-                                            newline-char
-                                            "  error: ab" newline-char
-                                            "  got: " newline-char
-                                            "    expr0: (+ 1 2)"
-                                            newline-char
-                                            "  ..." newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error 'ab (+ 1 2)))))))
+(let ((out-expected
+       (string-append (TAP-header 1)
+                      "not ok 1" newline-char
+                      "  ---" newline-char
+                      "  message: "
+                      "Exception was not thrown"
+                      newline-char
+                      "  error: ab" newline-char
+                      "  got: " newline-char
+                      "    expr0: (+ 1 2)"
+                      newline-char
+                      "  ..." newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error 'ab (+ 1 2))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error specific error none thrown FAIL" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 ;;; Catch wrong error while trying to catch a specific error (FAIL)
-(display (response (get-count) "test-error specific error wrong thrown FAIL"
-                   (string=? (string-append (TAP-header 1)
-                                            "not ok 1" newline-char
-                                            "  ---" newline-char
-                                            "  message: "
-                                            "Wrong exception was thrown"
-                                            newline-char
-                                            "  error: " newline-char
-                                            "    got: ef" newline-char
-                                            "    expected: ab" newline-char
-                                            "  got: " newline-char
-                                            "    expr0: "
-                                            "(excpt-raise (quote ef))"
-                                            newline-char
-                                            "  ..." newline-char)
-                             (call-with-string-output-port
-                              (lambda (p)
-                                (test-begin 1 'port p)
-                                (test-error 'ab (excpt-raise 'ef)))))))
+(let ((out-expected
+       (string-append (TAP-header 1)
+                      "not ok 1" newline-char
+                      "  ---" newline-char
+                      "  message: "
+                      "Wrong exception was thrown"
+                      newline-char
+                      "  error: " newline-char
+                      "    got: ef" newline-char
+                      "    expected: ab" newline-char
+                      "  got: " newline-char
+                      "    expr0: "
+                      "(excpt-raise (quote ef))"
+                      newline-char
+                      "  ..." newline-char))
+      (out-got (call-with-string-output-port
+                (lambda (p)
+                  (test-begin 1 'port p)
+                  (test-error 'ab (excpt-raise 'ef))))))
+  (let ((success (string=? out-expected out-got)))
+    (display (response (get-count) "test-error specific error wrong thrown FAIL" success))
+    (if (not success)
+        (begin
+          (display "  ---")
+          (newline)
+          (display "  failed: got wrong output")
+          (newline)
+          (display "    expected: ")
+          (write out-expected)
+          (newline)
+          (display "    got: ")
+          (write out-got)
+          (newline)))))
 (flush-output-port (current-output-port))
 
 
