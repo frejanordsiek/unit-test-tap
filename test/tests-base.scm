@@ -24,8 +24,6 @@
 ;;; generated manually while unit-test-tap's output is put into
 ;;; string ports to be evaluated for correctness.
 
-(import (unit-test-tap))
-
 ;; Short utility procedure to check if a string is 0 length.
 (define string-null?
   (lambda (s) (= 0 (string-length s))))

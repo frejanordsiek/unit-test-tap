@@ -20,11 +20,10 @@
 ;;; Boston, MA  02110-1301  USA
 
 
-(import (rnrs base (6)))
-(import (rnrs lists (6)))
-(import (prefix (rnrs exceptions (6)) excpt-))
-(import (only (rnrs io ports (6))
-              call-with-string-output-port
-              open-string-output-port))
-(import (rnrs io simple (6)))
+(import (rnrs base (6))
+        (rnrs lists (6))
+        (prefix (rnrs exceptions (6)) excpt-)
+        (rnrs io ports (6))
+        (rnrs io simple (6))
+        (unit-test-tap))
 

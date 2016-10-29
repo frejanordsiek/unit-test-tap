@@ -20,9 +20,10 @@
 ;;; Boston, MA  02110-1301  USA
 
 
-(import (except (scheme base) guard raise))
-(import (prefix (only (scheme base) guard raise) excpt-))
-(import (scheme write))
+(import (except (scheme base) guard raise)
+        (prefix (only (scheme base) guard raise) excpt-)
+        (scheme write)
+        (unit-test-tap))
 
 ;; Make the R6RS call-with-string-output-port and
 ;; open-string-output-port in terms of R7RS
