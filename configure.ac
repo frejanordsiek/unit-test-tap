@@ -81,6 +81,17 @@ AC_MSG_CHECKING([for whether to target Chicken (--with-chicken)])
 AC_MSG_RESULT([$with_chicken])
 AM_CONDITIONAL([USE_CHICKEN], [test x$with_chicken = xyes])
 
+dnl Target Vicare
+AC_ARG_WITH([vicare],
+AS_HELP_STRING([--with-vicare], [target Vicare @<:@default=no@:>@]),
+[case "${withval}" in
+  yes) with_vicare=yes ;;
+  no)  with_vicare=no ;;
+  *) AC_MSG_ERROR([bad value ${withval} for --with-vicare]) ;;
+esac], [with_vicare=no])
+AC_MSG_CHECKING([for whether to target Vicare (--with-vicare)])
+AC_MSG_RESULT([$with_vicare])
+AM_CONDITIONAL([USE_VICARE], [test x$with_vicare = xyes])
 
 AC_PROG_INSTALL
 AC_PROG_AWK
@@ -127,6 +138,15 @@ if test x$with_chicken = xyes ; then
   AC_MSG_RESULT([$_junk])
   if test "$_junk" = "no" ; then
       AC_MSG_FAILURE([Chicken extension r7rs not available])
+  fi
+fi
+
+dnl Look for Vicare
+if test x$with_vicare = xyes ; then
+  AC_MSG_NOTICE([checking for Vicare])
+  AC_PATH_PROG(VICARE, [vicare])
+  if test "$VICARE" = "" ; then
+    AC_MSG_FAILURE([could not find Vicare])
   fi
 fi
 

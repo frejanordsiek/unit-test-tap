@@ -53,21 +53,22 @@ A configure script is provided that will produce a Makefile that can be
 used to build the R6RS and R7RS-small versions of the library, compile
 the library to Guile's bytecode format (go files), install the library
 into Guile's site directories for Scheme files and go files, build the
-documentation, and run unit tests on the library in both Guile and
-Chicken. The package is configured using the configure script, which
+documentation, and run unit tests on the library in Guile, Chicken, and
+Vicare. The package is configured using the configure script, which
 takes user input to tune the build, finds and checks the desired Scheme
 implementations, and sets options for the different Scheme
 implementations. Inside the package directory, run
 
     ./configure [--prefix=DIR] [--with-guile=yes/no]] \
         [--enable-guile-compile=yes/no] [--with-guile-version=X.Y] \
-        [--with-chicken=yes/no]
+        [--with-chicken=yes/no] [--with-vicare=yes/no]
 
 where optional parameters can be used to set the base directory (prefix)
 for installing the documentation, which Scheme implementations to target
 (default is no for each one), and additional options for each Scheme
 implementation. The supported target implementations are
-guile (--with-guile) and chicken (--with-chicken).
+guile (--with-guile), chicken (--with-chicken), and vicare
+(--with-vicare).
 
 For Guile, the scheme source files can optionally be compiled with the
 --enable-guile-compile option (default is yes) and the Guile
@@ -81,14 +82,16 @@ Now that the Makefile has been made, one runs
 
 to build the documentation in info format and compile the library to
 Guile's bytecode depending on whether that was enabled or
-not. The library can be checked by running unit tests on it (using Guile
-or Chicken) by running
+not. The library can be checked by running unit tests on it (using
+Guile, Chicken, and/or Vicare) by running
 
     make check
 
-Everything can be installed by running
+Everything can be installed by running.
 
     make install
+
+Installing the library itself is currently limited to just for Guile.
 
 HTML documentation can be built using "make html" and installed by
 "make install-html".

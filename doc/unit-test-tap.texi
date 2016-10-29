@@ -110,8 +110,9 @@ which is in turn used for the
 and is also seeing a growing number of standalone programs.
 
 The package provides unit tests for this library for Guile (both Guile
-and R@sup{6}RS versions) and @uref{http://call-cc.org/, Chicken}
-(R@sup{7}RS version with the help of the @code{r7rs} extension).
+and R@sup{6}RS versions), @uref{http://call-cc.org/, Chicken}
+(R@sup{7}RS version with the help of the @code{r7rs} extension), and
+@uref{https://marcomaggi.github.io/vicare.html, Vicare} (R@sup{6}RS).
 
 @menu
 * License::
@@ -158,23 +159,24 @@ A @file{configure} script is provided that will produce a
 R@sup{7}RS-small versions of the library, compile the library to Guile's
 bytecode format (go files), install the library into Guile's site
 directories for Scheme files and go files, build the documentation, and
-run unit tests on the library in both Guile and Chicken. The package is
-configured using the @file{configure} script, which takes user input to
-tune the build, finds and checks the desired Scheme implementations, and
-sets options for the different Scheme implementations. Inside the
+run unit tests on the library in Guile, Chicken, and Vicare. The package
+is configured using the @file{configure} script, which takes user input
+to tune the build, finds and checks the desired Scheme implementations,
+and sets options for the different Scheme implementations. Inside the
 package directory, run
 
 @example
 ./configure [--prefix=DIR] [--with-guile=yes/no]] \
     [--enable-guile-compile=yes/no] [--with-guile-version=X.Y] \
-    [--with-chicken=yes/no]
+    [--with-chicken=yes/no] [--with-vicare=yes/no]
 @end example
 
 where optional parameters can be used to set the base directory (prefix)
 for installing the documentation, which Scheme implementations to target
 (default is no for each one), and additional options for each Scheme
 implementation. The supported target implementations are guile
-(@code{--with-guile}) and chicken (@code{--with-chicken}).
+(@code{--with-guile}), chicken (@code{--with-chicken}), and vicare
+(@code{--with-vicare}).
 
 For Guile, the scheme source files can optionally be compiled with the
 @code{--enable-guile-compile} option (default is yes) and the Guile
@@ -190,8 +192,8 @@ make
 
 to build the documentation in info format and compile the library to
 Guile's bytecode depending on whether that was enabled or
-not. The library can be checked by running unit tests on it (using Guile
-or Chicken) by running
+not. The library can be checked by running unit tests on it (using
+Guile, Chicken, and/or Vicare) by running
 
 @example
 make check
@@ -202,6 +204,8 @@ Everything can be installed by running
 @example
 make install
 @end example
+
+Installing the library itself is currently limited to just for Guile.
 
 HTML documentation can be built using @code{make html} and installed by
 @code{make install-html}.

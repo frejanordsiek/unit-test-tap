@@ -65,7 +65,8 @@ check_DATA = $(R6RS_TEST_TARGET) $(R7RS_TEST_TARGET)
 
 GUILE_TESTS = test/guile.test test/guile-r6rs.test
 CHICKEN_TESTS = test/chicken-r7rs.test
-ALL_TESTS = $(GUILE_TESTS) $(CHICKEN_TESTS)
+VICARE_TESTS = test/vicare-r6rs.test
+ALL_TESTS = $(GUILE_TESTS) $(CHICKEN_TESTS) $(VICARE_TESTS)
 
 TESTS =
 if USE_GUILE
@@ -73,6 +74,9 @@ TESTS += $(GUILE_TESTS)
 endif
 if USE_CHICKEN
 TESTS += $(CHICKEN_TESTS)
+endif
+if USE_VICARE
+TESTS += $(VICARE_TESTS)
 endif
 
 TEST_LOG_DRIVER = \
@@ -149,6 +153,11 @@ test/guile-r6rs.test: $(R6RS_TEST_TARGET) $(R6RS_TARGET)
 test/chicken-r7rs.test: $(R7RS_TARGET) $(R7RS_TEST_TARGET)
 	echo '#!$(SHELL)' > $@
 	echo "$(CHICKEN_CSI) -R r7rs -b -w -q $^" >> $@
+	chmod +x $@
+
+test/vicare-r6rs.test: $(R6RS_TEST_TARGET) $(R6RS_TARGET)
+	echo '#!$(SHELL)' > $@
+	echo "$(VICARE) -l $(R6RS_TARGET) --r6rs-script $<" >> $@
 	chmod +x $@
 
 SUFFIXES = .scm .go
