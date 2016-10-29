@@ -35,14 +35,14 @@
   (lambda ()
     (let-values (((p get-output) (open-string-output-port)))
       (values p
-              ;; Read the output two times and compare them. If they
-              ;; are not equal, then the read was destructive as R6RS
+              ;; Read the output two times and compare them. If the
+              ;; second is not "", then the read was destructive as R6RS
               ;; instructs and the data needs to be written back.
               ;; Otherwise, the scheme implementation doesn't quite
               ;; follow this behavior and the output can be left as is.
-              (lambda () (let ((out (get-output))
-                               (out2 (get-output)))
-                           (if (not (string=? out out2))
+              (lambda () (let* ((out (get-output))
+                                (out2 (get-output)))
+                           (if (string=? out2 "")
                                (begin
                                  (put-string p out)
                                  (flush-output-port p)))
