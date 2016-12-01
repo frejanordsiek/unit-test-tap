@@ -331,7 +331,9 @@
     ((wrap-test (proc . args) args-skip-fail . extra-args)
      ;; Handle the optional name argument and keyword skip and xfail
      ;; arguments.
-     (let* ((arg-alist (process-optional-args '((name . "")) '((skip . #f) (xfail . #f))
+     (let* ((arg-alist (process-optional-args (list (cons 'name ""))
+                                              (list (cons 'skip #f)
+                                                    (cons 'xfail #f))
                                               (list . extra-args)))
             (xname (cdr (assoc 'name arg-alist)))
             (xskip (cdr (assoc 'skip arg-alist)))
