@@ -39,9 +39,9 @@ dnl Target Guile
 AC_ARG_WITH([guile],
 AS_HELP_STRING([--with-guile], [target Guile @<:@default=no@:>@]),
 [case "${withval}" in
-  yes) with_chicken=yes ;;
-  no)  with_chicken=no ;;
-  *) AC_MSG_ERROR([bad value ${withval} for --with-chicken]) ;;
+  yes) with_guile=yes ;;
+  no)  with_guile=no ;;
+  *) AC_MSG_ERROR([bad value ${withval} for --with-guile]) ;;
 esac],[with_guile=no])
 AC_MSG_CHECKING([for wheter to target Guile (--with-guile)])
 AC_MSG_RESULT([$with_guile])
