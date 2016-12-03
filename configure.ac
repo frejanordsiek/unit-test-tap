@@ -141,13 +141,21 @@ if test x$with_chicken = xyes ; then
   fi
 fi
 
-dnl Look for Vicare
+dnl Look for Vicare and find install directory
 if test x$with_vicare = xyes ; then
   AC_MSG_NOTICE([checking for Vicare])
   AC_PATH_PROG(VICARE, [vicare])
   if test "$VICARE" = "" ; then
     AC_MSG_FAILURE([could not find Vicare])
   fi
+
+  AC_MSG_CHECKING([checking for the vicare library directory])
+  VICARE_SITE=`$VICARE --r6rs-script build-aux/vicare_site_dir.scm`
+  if test $? != "0" ; then
+    AC_MSG_FAILURE([Vicare libary directory could not be found])
+  fi
+  AC_MSG_RESULT([$VICARE_SITE])
+  AC_SUBST([VICARE_SITE])
 fi
 
 

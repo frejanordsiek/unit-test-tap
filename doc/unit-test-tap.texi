@@ -157,13 +157,14 @@ format (go files).
 A @file{configure} script is provided that will produce a
 @file{Makefile} that can be used to build the R@sup{6}RS and
 R@sup{7}RS-small versions of the library, compile the library to Guile's
-bytecode format (go files), install the library into Guile's site
-directories for Scheme files and go files, build the documentation, and
-run unit tests on the library in Guile, Chicken, and Vicare. The package
-is configured using the @file{configure} script, which takes user input
-to tune the build, finds and checks the desired Scheme implementations,
-and sets options for the different Scheme implementations. Inside the
-package directory, run
+bytecode format (go files), compile the library to Vicare's object
+format (fasl files), install the library into Guile's site directories for
+Scheme files and go files, install the library into Vicare's library
+search path, build the documentation, and run unit tests on the library in
+Guile, Chicken, and Vicare. The package is configured using the
+@file{configure} script, which takes user input to tune the build, finds
+and checks the desired Scheme implementations, and sets options for the
+different Scheme implementations. Inside the package directory, run
 
 @example
 ./configure [--prefix=DIR] [--with-guile=yes/no]] \
@@ -190,10 +191,11 @@ Now that the @file{Makefile} has been made, one runs
 make
 @end example
 
-to build the documentation in info format and compile the library to
+to build the documentation in info format, compile the library to
 Guile's bytecode depending on whether that was enabled or
-not. The library can be checked by running unit tests on it (using
-Guile, Chicken, and/or Vicare) by running
+not, and compile the library to Vicare's object format. The library can
+be checked by running unit tests on it (using Guile, Chicken, and/or
+Vicare) by running
 
 @example
 make check
