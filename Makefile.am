@@ -148,22 +148,22 @@ $(STRIPPED_INDENT_2_TARGET): $(STRIPPED_TARGET)
 $(STRIPPED_INDENT_4_TARGET): $(STRIPPED_TARGET)
 	$(SED) -e 's/^/    /g' $< > $@
 
-$(R7RS_TARGET): src/r7rs/header.scm.in $(STRIPPED_INDENT_4_TARGET)
+$(R7RS_TARGET): src/r7rs/header.scm $(STRIPPED_INDENT_4_TARGET)
 	cat $^ > $@
 	echo '    ))' >> $@
 
-$(R6RS_TARGET): src/r6rs/header.scm.in $(STRIPPED_INDENT_2_TARGET)
+$(R6RS_TARGET): src/r6rs/header.scm $(STRIPPED_INDENT_2_TARGET)
 	cat $^ > $@
 	echo '  )' >> $@
 
 
 # Build templates
 
-$(CHICKEN_SCM_TARGET): src/chicken/header.scm.in $(STRIPPED_INDENT_4_TARGET)
+$(CHICKEN_SCM_TARGET): src/chicken/header.scm $(STRIPPED_INDENT_4_TARGET)
 	cat $^ > $@
 	echo '    ))' >> $@
 
-$(VICARE_SLS_TARGET): src/vicare/header.scm.in $(STRIPPED_INDENT_2_TARGET)
+$(VICARE_SLS_TARGET): src/vicare/header.scm $(STRIPPED_INDENT_2_TARGET)
 	cat $^ > $@
 	echo '  )' >> $@
 
