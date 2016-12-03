@@ -17,6 +17,11 @@
 # Boston, MA  02110-1301  USA
 
 
+# Compile flags.
+GUILD_FLAGS = -Wunsupported-warning -Wunbound-variable -Warity-mismatch \
+		-Wduplicate-case-datum -Wbad-case-datum -Wformat
+VICARE_FLAGS = -O2
+
 # AWK file to remove docstrings and guile module declaration and its
 # associated command
 STRIP_GUILE_AWK_FILE = build-aux/strip_guile_specific.awk
@@ -38,11 +43,6 @@ vicaredir = $(VICARE_SITE)
 guile_install_go_files = install-guilegoDATA
 $(guile_install_go_files): install-guilescmDATA
 
-
-# GUILD compile flags.
-GUILD_FLAGS = -Wunsupported-warning -Wunbound-variable -Warity-mismatch \
-		-Wduplicate-case-datum -Wbad-case-datum -Wformat
-VICARE_FLAGS = -O2
 
 # Sources and targets. Built sources include stripped versions of the
 # Guile source with different indentations that are then used along
@@ -70,6 +70,23 @@ CHICKENOBJECTS = $(CHICKEN_SCM_TARGET)
 VICARE_SLS_TARGET = src/vicare/unit-test-tap.sls
 VICARE_FASL_TARGET = src/vicare/unit-test-tap.fasl
 VICAREOBJECTS = $(VICARE_SLS_TARGET) $(VICARE_FASL_TARGET)
+
+
+# Files to build and/or install
+
+if USE_GUILE
+guilescm_DATA = $(SOURCES)
+guilego_DATA = $(GOBJECTS)
+else
+guilescm_DATA =
+guilego_DATA =
+endif
+
+if USE_VICARE
+vicare_DATA = $(VICAREOBJECTS)
+else
+vicare_DATA =
+endif
 
 
 # Tests
@@ -102,23 +119,6 @@ TEST_LOG_DRIVER = \
 	$(SHELL) $(top_srcdir)/build-aux/tap-driver.sh --ignore-exit --comments
 
 
-# Files to build and/or install
-
-if USE_GUILE
-guilescm_DATA = $(SOURCES)
-guilego_DATA = $(GOBJECTS)
-else
-guilescm_DATA =
-guilego_DATA =
-endif
-
-if USE_VICARE
-vicare_DATA = $(VICAREOBJECTS)
-else
-vicare_DATA =
-endif
-
-
 # Documentation
 
 info_TEXINFOS = doc/unit-test-tap.texi
@@ -136,16 +136,6 @@ CLEANFILES =  $(BUILT_SOURCES) \
 	$(R6RS_TEST_TARGET) $(R7RS_TEST_TARGET)
 MAINTAINERCLEANFILES = Makefile.in
 
-
-# Build templates
-
-$(CHICKEN_SCM_TARGET): src/chicken/header.scm.in $(STRIPPED_INDENT_4_TARGET)
-	cat $^ > $@
-	echo '    ))' >> $@
-
-$(VICARE_SLS_TARGET): src/vicare/header.scm.in $(STRIPPED_INDENT_2_TARGET)
-	cat $^ > $@
-	echo '  )' >> $@
 
 # Built sources
 
@@ -165,6 +155,18 @@ $(R7RS_TARGET): src/r7rs/header.scm.in $(STRIPPED_INDENT_4_TARGET)
 $(R6RS_TARGET): src/r6rs/header.scm.in $(STRIPPED_INDENT_2_TARGET)
 	cat $^ > $@
 	echo '  )' >> $@
+
+
+# Build templates
+
+$(CHICKEN_SCM_TARGET): src/chicken/header.scm.in $(STRIPPED_INDENT_4_TARGET)
+	cat $^ > $@
+	echo '    ))' >> $@
+
+$(VICARE_SLS_TARGET): src/vicare/header.scm.in $(STRIPPED_INDENT_2_TARGET)
+	cat $^ > $@
+	echo '  )' >> $@
+
 
 # Tests - scheme files
 
