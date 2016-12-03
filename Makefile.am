@@ -44,20 +44,32 @@ GUILD_FLAGS = -Wunsupported-warning -Wunbound-variable -Warity-mismatch \
 		-Wduplicate-case-datum -Wbad-case-datum -Wformat
 VICARE_FLAGS = -O2
 
-# Sources and targets
+# Sources and targets. Built sources include stripped versions of the
+# Guile source with different indentations that are then used along
+# with the r6rs and r7rs headers to make the r6rs and r7rs sources.
+# Then the objects for each implementation are declared and are
+# going to be kept in a subdirectory for each implementation.
+
+SOURCES = src/guile/unit-test-tap.scm
 
 R6RS_TARGET = src/r6rs/unit-test-tap.scm
 R7RS_TARGET = src/r7rs/unit-test-tap.scm
+STRIPPED_TARGET = src/stripped-unit-test-tap.scm
+STRIPPED_INDENT_2_TARGET = src/stripped-indent-2-unit-test-tap.scm
+STRIPPED_INDENT_4_TARGET = src/stripped-indent-4-unit-test-tap.scm
 
-BUILT_SOURCES = $(R6RS_TARGET) $(R7RS_TARGET)
+BUILT_SOURCES = $(STRIPPED_TARGET) \
+	$(STRIPPED_INDENT_2_TARGET) $(STRIPPED_INDENT_4_TARGET) \
+	$(R6RS_TARGET) $(R7RS_TARGET)
 
-SOURCES = src/unit-test-tap.scm
+GOBJECTS = src/guile/unit-test-tap.go
 
-GOBJECTS = src/unit-test-tap.go
+CHICKEN_SCM_TARGET = src/chicken/unit-test-tap.scm
+CHICKENOBJECTS = $(CHICKEN_SCM_TARGET)
 
-VICARE_SLS_OBJECTS = src/r6rs/unit-test-tap.sls
-VICARE_FASL_OBJECTS = src/r6rs/unit-test-tap.fasl
-VICAREOBJECTS = $(VICARE_SLS_OBJECTS) $(VICARE_FASL_OBJECTS)
+VICARE_SLS_TARGET = src/vicare/unit-test-tap.sls
+VICARE_FASL_TARGET = src/vicare/unit-test-tap.fasl
+VICAREOBJECTS = $(VICARE_SLS_TARGET) $(VICARE_FASL_TARGET)
 
 
 # Tests
@@ -118,7 +130,8 @@ EXTRA_DIST = $(SOURCES) $(TESTSOURCES) \
 	$(R6RS_TESTSOURCES) $(R7RS_TESTSOURCES) \
 	$(STRIP_GUILE_AWK_FILE)
 
-CLEANFILES =  $(BUILT_SOURCES) $(GOBJECTS) $(VICAREOBJECTS) \
+CLEANFILES =  $(BUILT_SOURCES) \
+	$(GOBJECTS) $(VICAREOBJECTS) $(CHICKENOBJECTS) \
 	$(srcdir)/doc/unit-test-tap.info $(ALL_TESTS) \
 	$(R6RS_TEST_TARGET) $(R7RS_TEST_TARGET)
 MAINTAINERCLEANFILES = Makefile.in
@@ -126,16 +139,31 @@ MAINTAINERCLEANFILES = Makefile.in
 
 # Build templates
 
-# Built sources
-
-src/r7rs/unit-test-tap.scm: $(SOURCES) src/r7rs/header.scm.in
-	cp $(top_srcdir)/src/r7rs/header.scm.in $@
-	$(STRIP_GUILE) $< | $(SED) -e 's/^/    /g' >> $@
+$(CHICKEN_SCM_TARGET): src/chicken/header.scm.in $(STRIPPED_INDENT_4_TARGET)
+	cat $^ > $@
 	echo '    ))' >> $@
 
-src/r6rs/unit-test-tap.scm: $(SOURCES) src/r6rs/header.scm.in
-	cp $(top_srcdir)/src/r6rs/header.scm.in $@
-	$(STRIP_GUILE) $< | $(SED) -e 's/^/  /g' >> $@
+$(VICARE_SLS_TARGET): src/vicare/header.scm.in $(STRIPPED_INDENT_2_TARGET)
+	cat $^ > $@
+	echo '  )' >> $@
+
+# Built sources
+
+$(STRIPPED_TARGET): $(SOURCES)
+	$(STRIP_GUILE) $< > $@
+
+$(STRIPPED_INDENT_2_TARGET): $(STRIPPED_TARGET)
+	$(SED) -e 's/^/  /g' $< > $@
+
+$(STRIPPED_INDENT_4_TARGET): $(STRIPPED_TARGET)
+	$(SED) -e 's/^/    /g' $< > $@
+
+$(R7RS_TARGET): src/r7rs/header.scm.in $(STRIPPED_INDENT_4_TARGET)
+	cat $^ > $@
+	echo '    ))' >> $@
+
+$(R6RS_TARGET): src/r6rs/header.scm.in $(STRIPPED_INDENT_2_TARGET)
+	cat $^ > $@
 	echo '  )' >> $@
 
 # Tests - scheme files
@@ -148,9 +176,9 @@ $(R7RS_TEST_TARGET): $(R7RS_TESTSOURCES)
 
 # Tests - shell scripts
 
-test/guile.test: $(R6RS_TEST_TARGET) src/unit-test-tap.scm
+test/guile.test: $(R6RS_TEST_TARGET) src/guile/unit-test-tap.scm
 	echo '#!$(SHELL)' > $@
-	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src -s $<" >> $@
+	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src/guile -s $<" >> $@
 	chmod +x $@
 
 test/guile-r6rs.test: $(R6RS_TEST_TARGET) $(R6RS_TARGET)
@@ -158,14 +186,14 @@ test/guile-r6rs.test: $(R6RS_TEST_TARGET) $(R6RS_TARGET)
 	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src/r6rs -s $<" >> $@
 	chmod +x $@
 
-test/chicken-r7rs.test: $(R7RS_TARGET) $(R7RS_TEST_TARGET)
+test/chicken-r7rs.test: $(CHICKEN_SCM_TARGET) $(R7RS_TEST_TARGET)
 	echo '#!$(SHELL)' > $@
 	echo "$(CHICKEN_CSI) -R r7rs -b -w -q $^" >> $@
 	chmod +x $@
 
-test/vicare-r6rs.test: $(R6RS_TEST_TARGET) $(VICARE_FASL_OBJECTS)
+test/vicare-r6rs.test: $(R6RS_TEST_TARGET) $(VICARE_FASL_TARGET)
 	echo '#!$(SHELL)' > $@
-	echo "$(VICARE) -L `dirname $(VICARE_FASL_OBJECTS)` --r6rs-script $<" >> $@
+	echo "$(VICARE) -L `dirname $(VICARE_FASL_TARGET)` --r6rs-script $<" >> $@
 	chmod +x $@
 
 SUFFIXES = .scm .go .sls .fasl
@@ -176,7 +204,3 @@ SUFFIXES = .scm .go .sls .fasl
 
 .sls.fasl:
 	$(VICARE) $(VICARE_FLAGS) --compile-library $^ -o $@
-
-.scm.sls:
-	cp $^ $@
-

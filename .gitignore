@@ -31,8 +31,10 @@ doc/version.texi
 *.sls
 *.fasl
 *.info
+src/stripped-*.scm
 src/r6rs/unit-test-tap.scm
 src/r7rs/unit-test-tap.scm
+src/chicken/unit-test-tap.scm
 test/tests-r6rs.scm
 test/tests-r7rs.scm
 
