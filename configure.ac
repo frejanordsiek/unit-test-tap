@@ -54,21 +54,6 @@ AS_HELP_STRING([--with-guile-version=X.Y], [Guile effective version to target @<
 AC_MSG_CHECKING([for target Guile effective version (--with-guile-version)])
 AC_MSG_RESULT([$version_guile])
 
-dnl Conditionally Guile compile scheme files to go files
-AC_ARG_ENABLE([guile-compile],
-AS_HELP_STRING([--enable-guile-guile], [compile .scm files to .go files @<:@default=yes@:>@ for Guile]),
-[case "${enableval}" in
-  yes) compile_guile=yes ;;
-  no)  compile_guile=no ;;
-  *) AC_MSG_ERROR([bad value ${enableval} for --enable-guile-compile]) ;;
-esac],[compile_guile=yes])
-if test x$with_guile = xno ; then
-  compile_guile=no
-fi
-AM_CONDITIONAL([COMPILE_GUILE], [test x$compile_guile = xyes])
-AC_MSG_CHECKING([for whether to compile scheme files to go files for Guile (--enable-guile-compile)])
-AC_MSG_RESULT([$compile_guile])
-
 dnl Target chicken
 AC_ARG_WITH([chicken],
 AS_HELP_STRING([--with-chicken], [target Chicken @<:@default=no@:>@]),

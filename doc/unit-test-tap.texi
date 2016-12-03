@@ -168,7 +168,7 @@ different Scheme implementations. Inside the package directory, run
 
 @example
 ./configure [--prefix=DIR] [--with-guile=yes/no]] \
-    [--enable-guile-compile=yes/no] [--with-guile-version=X.Y] \
+    [--with-guile-version=X.Y] \
     [--with-chicken=yes/no] [--with-vicare=yes/no]
 @end example
 
@@ -179,11 +179,9 @@ implementation. The supported target implementations are guile
 (@code{--with-guile}), chicken (@code{--with-chicken}), and vicare
 (@code{--with-vicare}).
 
-For Guile, the scheme source files can optionally be compiled with the
-@code{--enable-guile-compile} option (default is yes) and the Guile
-effective version to target can be specified with the
-@code{--with-guile-version} option (default is 2.2, followed by 2.0 if
-2.2 cannot be found).
+For Guile, the Guile effective version to target can be specified with
+the @code{--with-guile-version} option (default is 2.2, followed by 2.0
+if 2.2 cannot be found).
 
 Now that the @file{Makefile} has been made, one runs
 
@@ -192,10 +190,9 @@ make
 @end example
 
 to build the documentation in info format, compile the library to
-Guile's bytecode depending on whether that was enabled or
-not, and compile the library to Vicare's object format. The library can
-be checked by running unit tests on it (using Guile, Chicken, and/or
-Vicare) by running
+Guile's bytecode, and compile the library to Vicare's object format. The
+library can be checked by running unit tests on it (using Guile,
+Chicken, and/or Vicare) by running
 
 @example
 make check
@@ -207,7 +204,8 @@ Everything can be installed by running
 make install
 @end example
 
-Installing the library itself is currently limited to just for Guile.
+Installing the library itself is currently limited to just Guile and
+Vicare.
 
 HTML documentation can be built using @code{make html} and installed by
 @code{make install-html}.

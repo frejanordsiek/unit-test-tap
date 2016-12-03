@@ -91,13 +91,9 @@ TEST_LOG_DRIVER = \
 
 if USE_GUILE
 guilescm_DATA = $(SOURCES)
-else
-guilescm_DATA =
-endif
-
-if COMPILE_GUILE
 go_DATA = $(GOBJECTS)
 else
+guilescm_DATA =
 go_DATA =
 endif
 

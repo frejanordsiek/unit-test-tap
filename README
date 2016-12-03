@@ -62,7 +62,7 @@ options for the different Scheme implementations. Inside the package
 directory, run
 
     ./configure [--prefix=DIR] [--with-guile=yes/no]] \
-        [--enable-guile-compile=yes/no] [--with-guile-version=X.Y] \
+        [--with-guile-version=X.Y] \
         [--with-chicken=yes/no] [--with-vicare=yes/no]
 
 where optional parameters can be used to set the base directory (prefix)
@@ -78,15 +78,18 @@ effective version to target can be specified with the
 --with-guile-version option (default is 2.2, followed by 2.0 if 2.2
 cannot be found).
 
+For Guile, the Guile effective version to target can be specified with
+the --with-guile-version option (default is 2.2, followed by 2.0 if 2.2
+cannot be found).
+
 Now that the Makefile has been made, one runs
 
     make
 
 to build the documentation in info format, compile the library to
-Guile's bytecode depending on whether that was enabled or
-not, and compile the library to Vicare's object format. The library can
-be checked by running unit tests on it (using Guile, Chicken, and/or
-Vicare) by running
+Guile's bytecode, and compile the library to Vicare's object format. The
+library can be checked by running unit tests on it (using Guile,
+Chicken, and/or Vicare) by running
 
     make check
 
@@ -94,7 +97,8 @@ Everything can be installed by running.
 
     make install
 
-Installing the library itself is currently limited to just for Guile.
+Installing the library itself is currently limited to just Guile and
+Vicare.
 
 HTML documentation can be built using "make html" and installed by
 "make install-html".
