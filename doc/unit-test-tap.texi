@@ -145,8 +145,8 @@ Guile specific version. After being built, they are found at
 @file{src/r7rs/unit-test-tap.scm}.
 
 The Guile version of the library is entirely contained in
-@file{src/unit-tap-test.scm}. It is possible to just copy the file to
-where ever it is needed; such as into Guile's site directory, which can
+@file{src/guile/unit-tap-test.scm}. It is possible to just copy the file
+to where ever it is needed; such as into Guile's site directory, which can
 be found by running @code{(%site-dir)} at the REPL. On GNU/Linux, it
 will usually be something like @file{/usr/share/guile/site/X.Y} where
 @code{X.Y} is the effective version of Guile. Though, using the provided
