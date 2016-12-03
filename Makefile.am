@@ -22,11 +22,12 @@
 STRIP_GUILE_AWK_FILE = build-aux/strip_guile_specific.awk
 STRIP_GUILE = $(AWK) -f $(top_srcdir)/$(STRIP_GUILE_AWK_FILE)
 
-# Install directories for scm, go, and fasl files.
+# Install directories for Guile scm and go, and Vicare sls and fasl
+# files.
 
 guilescmdir = $(GUILE_SITE_SCM)
-godir = $(GUILE_SITE_GO)
-vicarefasldir = $(VICARE_SITE)
+guilegodir = $(GUILE_SITE_GO)
+vicaredir = $(VICARE_SITE)
 
 # Need to make sure scheme files are installed before go files so
 # that the go files are newer in the installation directores (otherwise
@@ -34,7 +35,7 @@ vicarefasldir = $(VICARE_SITE)
 #
 # http://lists.gnu.org/archive/html/guile-devel/2010-07/msg00125.html
 
-guile_install_go_files = install-goDATA
+guile_install_go_files = install-guilegoDATA
 $(guile_install_go_files): install-guilescmDATA
 
 
@@ -54,7 +55,9 @@ SOURCES = src/unit-test-tap.scm
 
 GOBJECTS = src/unit-test-tap.go
 
-VICAREOBJECTS = src/r6rs/unit-test-tap.fasl
+VICARE_SLS_OBJECTS = src/r6rs/unit-test-tap.sls
+VICARE_FASL_OBJECTS = src/r6rs/unit-test-tap.fasl
+VICAREOBJECTS = $(VICARE_SLS_OBJECTS) $(VICARE_FASL_OBJECTS)
 
 
 # Tests
@@ -91,16 +94,16 @@ TEST_LOG_DRIVER = \
 
 if USE_GUILE
 guilescm_DATA = $(SOURCES)
-go_DATA = $(GOBJECTS)
+guilego_DATA = $(GOBJECTS)
 else
 guilescm_DATA =
-go_DATA =
+guilego_DATA =
 endif
 
 if USE_VICARE
-vicarefasl_DATA = $(VICAREOBJECTS)
+vicare_DATA = $(VICAREOBJECTS)
 else
-vicarefasl_DATA =
+vicare_DATA =
 endif
 
 
@@ -160,17 +163,20 @@ test/chicken-r7rs.test: $(R7RS_TARGET) $(R7RS_TEST_TARGET)
 	echo "$(CHICKEN_CSI) -R r7rs -b -w -q $^" >> $@
 	chmod +x $@
 
-test/vicare-r6rs.test: $(R6RS_TEST_TARGET) $(VICAREOBJECTS)
+test/vicare-r6rs.test: $(R6RS_TEST_TARGET) $(VICARE_FASL_OBJECTS)
 	echo '#!$(SHELL)' > $@
-	echo "$(VICARE) -L `dirname $(VICAREOBJECTS)` --r6rs-script $<" >> $@
+	echo "$(VICARE) -L `dirname $(VICARE_FASL_OBJECTS)` --r6rs-script $<" >> $@
 	chmod +x $@
 
-SUFFIXES = .scm .go .fasl
+SUFFIXES = .scm .go .sls .fasl
 
 # Compile
 .scm.go:
 	$(GUILD) compile $(GUILD_FLAGS) -L $(top_srcdir)/src -o $@ $^
 
-.scm.fasl:
+.sls.fasl:
 	$(VICARE) $(VICARE_FLAGS) --compile-library $^ -o $@
+
+.scm.sls:
+	cp $^ $@
 

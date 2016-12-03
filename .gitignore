@@ -28,6 +28,7 @@ doc/version.texi
 
 # Built files
 *.go
+*.sls
 *.fasl
 *.info
 src/r6rs/unit-test-tap.scm
