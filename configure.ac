@@ -27,6 +27,8 @@ AC_INIT([unit-test-tap], [0.1], [Freja Nordsiek <fnordsie at gmail dt com>])
 AC_CONFIG_MACRO_DIR([m4])
 m4_include([m4/guile.m4])
 m4_include([m4/guile_additional.m4])
+m4_include([m4/chicken.m4])
+m4_include([m4/vicare.m4])
 
 AC_CONFIG_AUX_DIR([build-aux])
 AM_INIT_AUTOMAKE([gnu dist-xz -Wall -Werror])
@@ -109,38 +111,14 @@ fi
 
 dnl Look for Chicken with R7RS extension if that is enabled.
 if test x$with_chicken = xyes ; then
-  AC_MSG_NOTICE([checking for Chicken with R7RS])
-  AC_PATH_PROG(CHICKEN, [chicken])
-  AC_PATH_PROG(CHICKEN_CSI, [csi])
-  if test "$CHICKEN" = "" -o "$CHICKEN_CSI" = "" ; then
-    AC_MSG_FAILURE([could not find Chicken])
-  fi
-  AC_MSG_CHECKING([checking for the chicken r7rs extension])
-  _junk=`$CHICKEN_CSI -R r7rs -q -b -w -e "(display \"yes\")"`
-  if test $? != "0" ; then
-    _junk=no
-  fi
-  AC_MSG_RESULT([$_junk])
-  if test "$_junk" = "no" ; then
-      AC_MSG_FAILURE([Chicken extension r7rs not available])
-  fi
+  CHICKEN_PROGS
+  CHICKEN_EXTENSION_REQUIRED([r7rs])
 fi
 
 dnl Look for Vicare and find install directory
 if test x$with_vicare = xyes ; then
-  AC_MSG_NOTICE([checking for Vicare])
-  AC_PATH_PROG(VICARE, [vicare])
-  if test "$VICARE" = "" ; then
-    AC_MSG_FAILURE([could not find Vicare])
-  fi
-
-  AC_MSG_CHECKING([checking for the vicare library directory])
-  VICARE_SITE=`$VICARE --r6rs-script build-aux/vicare_site_dir.scm`
-  if test $? != "0" ; then
-    AC_MSG_FAILURE([Vicare libary directory could not be found])
-  fi
-  AC_MSG_RESULT([$VICARE_SITE])
-  AC_SUBST([VICARE_SITE])
+  VICARE_PROGS
+  VICARE_SITE_DIR
 fi
 
 

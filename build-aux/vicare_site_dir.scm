@@ -1,7 +1,7 @@
 ;;; vicare_site_dir.scm --- Returns the Vicare library directory
 ;;; coding: utf-8
 
-;;; vicare_site_dir - scheme script to get the Vicare library directory
+;;; unit-test-tap - scheme unit testing framework with TAP output
 ;;; Copyright (C) 2016 Freja Nordsiek
 ;;;
 ;;; This program is free software: you can redistribute it and/or modify
