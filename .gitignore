@@ -25,6 +25,11 @@ Makefile
 doc/.dirstamp
 doc/stamp-vti
 doc/version.texi
+build-aux/install-sh
+build-aux/mdate-sh
+build-aux/missing
+build-aux/tap-driver.sh
+build-aux/texinfo.tex
 
 # Built files
 *.go
