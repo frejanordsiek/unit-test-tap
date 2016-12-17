@@ -28,8 +28,10 @@ STRIP_GUILE_AWK_FILE = build-aux/strip_guile_specific.awk
 STRIP_GUILE = $(AWK) -f $(top_srcdir)/$(STRIP_GUILE_AWK_FILE)
 
 # Install directories for Guile scm and go, and Vicare sls and fasl
-# files.
+# files. We will install the R6RS and R7RS files into share.
 
+datar6rsdir = $(datadir)/unit-test-tap/r6rs
+datar7rsdir = $(datadir)/unit-test-tap/r7rs
 guilescmdir = $(GUILE_SITE_SCM)
 guilegodir = $(GUILE_SITE_GO)
 vicaredir = $(VICARE_SITE)
@@ -58,7 +60,7 @@ STRIPPED_TARGET = src/stripped-unit-test-tap.scm
 STRIPPED_INDENT_2_TARGET = src/stripped-indent-2-unit-test-tap.scm
 STRIPPED_INDENT_4_TARGET = src/stripped-indent-4-unit-test-tap.scm
 
-BUILT_SOURCES = $(STRIPPED_TARGET) \
+INTERMEDIATE_SOURCES = $(STRIPPED_TARGET) \
 	$(STRIPPED_INDENT_2_TARGET) $(STRIPPED_INDENT_4_TARGET) \
 	$(R6RS_TARGET) $(R7RS_TARGET)
 
@@ -74,6 +76,8 @@ VICAREOBJECTS = $(VICARE_SLS_TARGET) $(VICARE_FASL_TARGET)
 
 # Files to build and/or install
 
+datar6rs_DATA = $(R6RS_TARGET)
+datar7rs_DATA = $(R7RS_TARGET)
 if USE_GUILE
 guilescm_DATA = $(SOURCES)
 guilego_DATA = $(GOBJECTS)
@@ -122,6 +126,7 @@ TEST_LOG_DRIVER = \
 # Documentation
 
 info_TEXINFOS = doc/unit-test-tap.texi
+doc_unit_test_tap_TEXINFOS = doc/fdl-1.3.texi
 
 
 # Packaging and cleaning
@@ -130,9 +135,9 @@ EXTRA_DIST = $(SOURCES) $(TESTSOURCES) \
 	$(R6RS_TESTSOURCES) $(R7RS_TESTSOURCES) \
 	$(STRIP_GUILE_AWK_FILE)
 
-CLEANFILES =  $(BUILT_SOURCES) \
+CLEANFILES =  $(INTERMEDIATE_SOURCES) \
 	$(GOBJECTS) $(VICAREOBJECTS) $(CHICKENOBJECTS) \
-	$(srcdir)/doc/unit-test-tap.info $(ALL_TESTS) \
+	$doc/unit-test-tap.info $(ALL_TESTS) \
 	$(R6RS_TEST_TARGET) $(R7RS_TEST_TARGET)
 MAINTAINERCLEANFILES = Makefile.in
 
@@ -178,14 +183,14 @@ $(R7RS_TEST_TARGET): $(R7RS_TESTSOURCES)
 
 # Tests - shell scripts
 
-test/guile.test: $(R6RS_TEST_TARGET) src/guile/unit-test-tap.scm
+test/guile.test: $(R6RS_TEST_TARGET) $(GOBJECTS)
 	echo '#!$(SHELL)' > $@
-	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src/guile -s $<" >> $@
+	echo "$(GUILE) --no-auto-compile -C `dirname $(GOBJECTS)` -s $<" >> $@
 	chmod +x $@
 
 test/guile-r6rs.test: $(R6RS_TEST_TARGET) $(R6RS_TARGET)
 	echo '#!$(SHELL)' > $@
-	echo "$(GUILE) --no-auto-compile -L $(top_srcdir)/src/r6rs -s $<" >> $@
+	echo "$(GUILE) --no-auto-compile -L `dirname $(R6RS_TARGET)` -s $<" >> $@
 	chmod +x $@
 
 test/chicken-r7rs.test: $(CHICKEN_SCM_TARGET) $(R7RS_TEST_TARGET)

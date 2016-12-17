@@ -31,7 +31,7 @@ m4_include([m4/chicken.m4])
 m4_include([m4/vicare.m4])
 
 AC_CONFIG_AUX_DIR([build-aux])
-AM_INIT_AUTOMAKE([gnu dist-xz -Wall -Werror])
+AM_INIT_AUTOMAKE([subdir-objects info-in-builddir gnu dist-xz -Wall -Werror])
 
 AC_COPYRIGHT(UNITTESTTAP_CONFIGURE_COPYRIGHT)
 
@@ -121,6 +121,10 @@ if test x$with_vicare = xyes ; then
   VICARE_SITE_DIR
 fi
 
+
+AC_CONFIG_COMMANDS_POST([mkdir -p src src/r6rs src/r7rs \
+                               src/vicare src/chicken \
+                               test])
 
 AC_CONFIG_FILES([Makefile])
 AC_REQUIRE_AUX_FILE([tap-driver.sh])
