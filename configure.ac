@@ -26,7 +26,6 @@ AC_INIT([unit-test-tap], [0.1], [Freja Nordsiek <fnordsie at gmail dt com>])
 
 AC_CONFIG_MACRO_DIR([m4])
 m4_include([m4/guile.m4])
-m4_include([m4/guile_additional.m4])
 m4_include([m4/chicken.m4])
 m4_include([m4/vicare.m4])
 
@@ -92,10 +91,7 @@ if test x$with_guile = xyes ; then
   dnl Check for GUILE
   GUILE_PKG([$version_guile 2.2 2.0])
   GUILE_PROGS
-
-  dnl get the site dir for scheme and go files.
-  GUILE_SITE_SCM_DIR
-  GUILE_SITE_GO_DIR
+  GUILE_SITE_DIR
 
   dnl Check all required modules.
 

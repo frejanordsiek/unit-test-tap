@@ -32,8 +32,8 @@ STRIP_GUILE = $(AWK) -f $(top_srcdir)/$(STRIP_GUILE_AWK_FILE)
 
 datar6rsdir = $(datadir)/unit-test-tap/r6rs
 datar7rsdir = $(datadir)/unit-test-tap/r7rs
-guilescmdir = $(GUILE_SITE_SCM)
-guilegodir = $(GUILE_SITE_GO)
+guilescmdir = $(GUILE_SITE)
+guilegodir = $(GUILE_SITE_CCACHE)
 vicaredir = $(VICARE_SITE)
 
 # Need to make sure scheme files are installed before go files so
