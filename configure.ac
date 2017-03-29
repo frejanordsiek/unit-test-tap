@@ -51,7 +51,7 @@ AM_CONDITIONAL([USE_GUILE], [test x$with_guile = xyes])
 dnl Target a specific version of Guile
 AC_ARG_WITH([guile-version],
 AS_HELP_STRING([--with-guile-version=X.Y], [Guile effective version to target @<:@default=2.2@:>@ If not found, it will look for 2.2 and then 2.0.]),
-[],[version_guile=2.2])
+[version_guile=${withval}],[version_guile=2.2])
 AC_MSG_CHECKING([for target Guile effective version (--with-guile-version)])
 AC_MSG_RESULT([$version_guile])
 
