@@ -674,7 +674,7 @@
                       newline-char
                       "  ---" newline-char
                       "  message: "
-                      "Expected to fail but didn't"
+                      "Expected to fail but didn't (exception was thrown)"
                       newline-char
                       "  got: " newline-char
                       "    expr0: "
